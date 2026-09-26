@@ -14,6 +14,8 @@ import {
   Send,
   Lock,
   Loader2,
+  User,
+  ShieldAlert,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -230,11 +232,22 @@ function ChatPage() {
   };
 
   const running = chat.status !== "idle" && chat.status !== "error";
+  const permissionsGranted = chat.camPermission === "granted" && chat.micPermission === "granted";
+  const permissionsDenied = chat.camPermission === "denied" || chat.micPermission === "denied";
+
+  async function allowDevices() {
+    try {
+      await chat.requestPermissions();
+      toast.success("Camera and microphone are on.");
+    } catch {
+      toast.error("Permission denied. Allow camera and microphone in your browser settings.");
+    }
+  }
 
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl px-4 py-6">
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 pb-32">
         <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
           {/* ---------------- video ---------------- */}
           <section>
