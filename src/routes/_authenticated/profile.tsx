@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,22 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, GENDERS } from "@/lib/constants";
-import { deleteMyAccount } from "@/lib/account.functions";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -48,9 +35,6 @@ export const Route = createFileRoute("/_authenticated/profile")({
 
 function ProfilePage() {
   const { user, profile, refreshProfile } = useAuth();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const removeAccount = useServerFn(deleteMyAccount);
 
   const [displayName, setDisplayName] = useState("");
   const [gender, setGender] = useState("unspecified");
@@ -101,19 +85,6 @@ function ProfilePage() {
     }
     await refreshProfile();
     toast.success("Profile saved");
-  }
-
-  async function handleDelete() {
-    try {
-      await removeAccount({ data: undefined });
-      await queryClient.cancelQueries();
-      queryClient.clear();
-      await supabase.auth.signOut();
-      toast.success("Your account has been deleted");
-      navigate({ to: "/", replace: true });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not delete the account");
-    }
   }
 
   return (
@@ -212,31 +183,6 @@ function ProfilePage() {
           </Button>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-destructive/40 bg-card p-6">
-          <h2 className="text-lg font-semibold">Delete account</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            This removes your profile and sign-in permanently. It cannot be undone.
-          </p>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="mt-4">
-                Delete my account
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Your profile, chats and sign-in will be removed for good.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Keep my account</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
       </main>
     </div>
   );

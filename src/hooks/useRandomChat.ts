@@ -124,6 +124,8 @@ export function useRandomChat() {
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
     setLocalStream(null);
+    setCamOn(false);
+    setMicOn(false);
   }, []);
 
   const toggleCam = useCallback(() => {
@@ -206,6 +208,19 @@ export function useRandomChat() {
   );
 
   const stop = useCallback(async () => {
+    keepSearchingRef.current = false;
+    const current = match;
+    teardownPeer();
+    setMatch(null);
+    setPartner(null);
+    setMessages([]);
+    await supabase.rpc("leave_queue");
+    if (current) await supabase.rpc("end_match", { p_match_id: current.id });
+    stopMedia();
+    setStatus("idle");
+  }, [match, teardownPeer, stopMedia]);
+
+  const disableDevices = useCallback(async () => {
     keepSearchingRef.current = false;
     const current = match;
     teardownPeer();
@@ -492,6 +507,7 @@ export function useRandomChat() {
     camPermission,
     micPermission,
     requestPermissions: ensureMedia,
+    disableDevices,
     start,
     stop,
     next,
