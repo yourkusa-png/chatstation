@@ -14,7 +14,6 @@ import {
   Send,
   Lock,
   Loader2,
-  User,
   ShieldAlert,
 } from "lucide-react";
 
@@ -175,7 +174,7 @@ function ChatPage() {
   if (ban) {
     return (
       <div className="min-h-screen">
-        <SiteHeader />
+        <SiteHeader onDisableDevices={chat.disableDevices} />
         <div className="mx-auto max-w-lg px-4 py-24 text-center">
           <Lock className="mx-auto size-10 text-destructive" />
           <h1 className="mt-5 text-2xl font-bold">Your account is suspended</h1>
@@ -196,7 +195,7 @@ function ChatPage() {
   if (profile && !profile.age_confirmed) {
     return (
       <div className="min-h-screen">
-        <SiteHeader />
+        <SiteHeader onDisableDevices={chat.disableDevices} />
         <div className="mx-auto max-w-lg px-4 py-20">
           <div className="rounded-2xl border border-border bg-card p-7">
             <h1 className="text-2xl font-bold">Before you join</h1>
@@ -232,7 +231,10 @@ function ChatPage() {
   };
 
   const running = chat.status !== "idle" && chat.status !== "error";
-  const permissionsGranted = chat.camPermission === "granted" && chat.micPermission === "granted";
+  const permissionsGranted =
+    chat.camPermission === "granted" &&
+    chat.micPermission === "granted" &&
+    Boolean(chat.localStream);
   const permissionsDenied = chat.camPermission === "denied" || chat.micPermission === "denied";
 
   async function allowDevices() {
@@ -246,7 +248,7 @@ function ChatPage() {
 
   return (
     <div className="min-h-screen">
-      <SiteHeader />
+      <SiteHeader onDisableDevices={chat.disableDevices} />
       <main className="mx-auto w-full max-w-6xl px-4 py-6 pb-32">
         <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
           {/* ---------------- video ---------------- */}
@@ -440,14 +442,14 @@ function ChatPage() {
       </main>
 
       {/* ---------------- bottom control bar ---------------- */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-2 px-4 py-3 sm:gap-3">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 shadow-2xl backdrop-blur">
+        <div className="mx-auto grid min-h-24 w-full max-w-lg grid-cols-[64px_64px_minmax(128px,1fr)_64px] items-center gap-2 px-3 py-2 sm:max-w-2xl sm:grid-cols-[72px_72px_minmax(160px,1fr)_72px]">
           {/* mic */}
           <div className="flex flex-col items-center gap-1">
             <Button
-              variant={chat.micOn && permissionsGranted ? "outline" : "destructive"}
+              variant={chat.micOn && permissionsGranted ? "secondary" : "destructive"}
               size="icon"
-              className="size-11 rounded-full"
+              className="size-11 rounded-full shadow-none"
               onClick={chat.toggleMic}
               disabled={!permissionsGranted || !chat.localStream}
               aria-label="Toggle microphone"
@@ -458,17 +460,17 @@ function ChatPage() {
                 <MicOff className="size-5" />
               )}
             </Button>
-            <span className="text-[10px] text-muted-foreground">
-              {chat.micPermission === "granted" ? (chat.micOn ? "Mic on" : "Mic off") : "Mic blocked"}
+            <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+              {chat.micOn && permissionsGranted ? "Mic on" : "Mic off"}
             </span>
           </div>
 
           {/* camera */}
           <div className="flex flex-col items-center gap-1">
             <Button
-              variant={chat.camOn && permissionsGranted ? "outline" : "destructive"}
+              variant={chat.camOn && permissionsGranted ? "secondary" : "destructive"}
               size="icon"
-              className="size-11 rounded-full"
+              className="size-11 rounded-full shadow-none"
               onClick={chat.toggleCam}
               disabled={!permissionsGranted || !chat.localStream}
               aria-label="Toggle camera"
@@ -479,71 +481,63 @@ function ChatPage() {
                 <VideoOff className="size-5" />
               )}
             </Button>
-            <span className="text-[10px] text-muted-foreground">
-              {chat.camPermission === "granted" ? (chat.camOn ? "Cam on" : "Cam off") : "Cam blocked"}
+            <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+              {chat.camOn && permissionsGranted ? "Camera on" : "Camera off"}
             </span>
           </div>
 
           {/* start / stop / next */}
-          {!permissionsGranted ? (
-            <Button size="lg" className="glow-ring" onClick={allowDevices}>
-              <Video className="size-4" /> Allow camera & mic
-            </Button>
-          ) : !running ? (
-            <Button
-              size="lg"
-              className="glow-ring"
-              onClick={() =>
-                chat.start({
-                  interests,
-                  wantGender: isPremium && wantGender !== ANY ? wantGender : null,
-                  wantCountry: isPremium && wantCountry !== ANY ? wantCountry : null,
-                })
-              }
-            >
-              <Play className="size-4" /> Start
-            </Button>
-          ) : (
-            <>
-              <Button size="lg" variant="destructive" onClick={() => chat.stop()}>
+          <div className="flex min-w-0 flex-col items-stretch gap-1">
+            {!permissionsGranted ? (
+              <Button size="lg" className="h-12 w-full" onClick={allowDevices}>
+                <Video className="size-4" /> Allow devices
+              </Button>
+            ) : !running ? (
+              <Button
+                size="lg"
+                className="glow-ring h-12 w-full"
+                onClick={() =>
+                  chat.start({
+                    interests,
+                    wantGender: isPremium && wantGender !== ANY ? wantGender : null,
+                    wantCountry: isPremium && wantCountry !== ANY ? wantCountry : null,
+                  })
+                }
+              >
+                <Play className="size-4" /> Start chatting
+              </Button>
+            ) : (
+              <Button size="lg" variant="destructive" className="h-12 w-full" onClick={() => chat.stop()}>
                 <Square className="size-4" /> Stop
               </Button>
-              <Button size="lg" onClick={() => chat.next()}>
-                <SkipForward className="size-4" /> Next
-              </Button>
-            </>
-          )}
+            )}
+            <span className="truncate text-center text-[10px] text-muted-foreground">
+              {!permissionsGranted ? "Camera & mic required" : statusText[chat.status]}
+            </span>
+          </div>
 
           {/* report */}
-          {chat.partner && (
+          {running ? (
             <div className="flex flex-col items-center gap-1">
               <Button
-                variant="outline"
+                variant="secondary"
                 size="icon"
-                className="size-11 rounded-full text-destructive"
-                onClick={() => setReportOpen(true)}
-                aria-label="Report"
+                className="size-11 rounded-full"
+                onClick={() => chat.next()}
+                aria-label="Next chat"
               >
-                <Flag className="size-5" />
+                <SkipForward className="size-5" />
               </Button>
-              <span className="text-[10px] text-muted-foreground">Report</span>
+              <span className="text-[10px] text-muted-foreground">Next</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-1">
+              <Button variant="secondary" size="icon" className="size-11 rounded-full" disabled aria-label="Next chat">
+                <SkipForward className="size-5" />
+              </Button>
+              <span className="text-[10px] text-muted-foreground">Next</span>
             </div>
           )}
-
-          {/* profile */}
-          <div className="flex flex-col items-center gap-1">
-            <Button
-              asChild
-              variant="outline"
-              size="icon"
-              className="size-11 rounded-full"
-            >
-              <Link to="/profile" aria-label="Profile">
-                <User className="size-5" />
-              </Link>
-            </Button>
-            <span className="text-[10px] text-muted-foreground">Profile</span>
-          </div>
         </div>
       </div>
 

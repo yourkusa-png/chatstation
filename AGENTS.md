@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep all signed-in account actions in `SiteHeader`'s account menu so destructive and subscription actions remain consistent across pages.

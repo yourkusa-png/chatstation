@@ -1,21 +1,78 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Radio, Shield } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  CameraOff,
+  Crown,
+  LogOut,
+  Menu,
+  Radio,
+  Shield,
+  Trash2,
+  UserRound,
+} from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { deleteMyAccount } from "@/lib/account.functions";
+import { toast } from "sonner";
 
-export function SiteHeader() {
+type SiteHeaderProps = {
+  onDisableDevices?: () => Promise<void> | void;
+};
+
+export function SiteHeader({ onDisableDevices }: SiteHeaderProps) {
   const { user, profile, isStaff, loading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const removeAccount = useServerFn(deleteMyAccount);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
+  }
+
+  async function handleDisableDevices() {
+    await onDisableDevices?.();
+    toast.success("Camera and microphone access is off in the app.");
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await removeAccount({ data: undefined });
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      await supabase.auth.signOut();
+      navigate({ to: "/", replace: true });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete the account");
+      setDeleting(false);
+    }
   }
 
   return (
@@ -28,8 +85,8 @@ export function SiteHeader() {
           <span className="font-display text-lg font-bold tracking-tight">StaticRoom</span>
         </Link>
 
-        <nav className="ml-auto flex items-center gap-1 sm:gap-2">
-          <Button asChild variant="ghost" size="sm">
+        <nav className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
+          <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
             <Link to="/pricing">Pricing</Link>
           </Button>
           {isStaff && (
@@ -41,15 +98,52 @@ export function SiteHeader() {
           )}
           {loading ? null : user ? (
             <>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/profile">{profile?.display_name ?? "Profile"}</Link>
-              </Button>
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="hidden sm:inline-flex">
                 <Link to="/chat">Chat</Link>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                Sign out
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" aria-label="Open account menu">
+                    <Menu className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 p-2">
+                  <DropdownMenuLabel className="px-2 py-2">
+                    <span className="block truncate text-sm">{profile?.display_name ?? "My account"}</span>
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {profile?.is_premium ? "Premium plan" : "Free plan"}
+                    </span>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild className="h-10 cursor-pointer">
+                    <Link to="/profile"><UserRound /> Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className="h-10 cursor-pointer">
+                    <Link to="/pricing"><Crown /> Upgrade subscription</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="h-10 cursor-pointer"
+                    onSelect={() => void handleDisableDevices()}
+                  >
+                    <CameraOff /> Turn off camera &amp; mic
+                  </DropdownMenuItem>
+                  {isStaff && (
+                    <DropdownMenuItem asChild className="h-10 cursor-pointer">
+                      <Link to="/admin"><Shield /> Moderation</Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="h-10 cursor-pointer" onSelect={() => void handleSignOut()}>
+                    <LogOut /> Sign out
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="h-10 cursor-pointer text-destructive focus:text-destructive"
+                    onSelect={() => setDeleteOpen(true)}
+                  >
+                    <Trash2 /> Delete account permanently
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <Button asChild size="sm">
@@ -58,6 +152,29 @@ export function SiteHeader() {
           )}
         </nav>
       </div>
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete your account permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your profile, chat history and sign-in will be removed. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Keep my account</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteAccount();
+              }}
+            >
+              {deleting ? "Deleting…" : "Delete permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }
