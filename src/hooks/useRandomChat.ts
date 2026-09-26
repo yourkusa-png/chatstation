@@ -66,6 +66,33 @@ export function useRandomChat() {
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [camOn, setCamOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
+  const [camPermission, setCamPermission] = useState<PermissionState>("prompt");
+  const [micPermission, setMicPermission] = useState<PermissionState>("prompt");
+
+  /* ------------------------------------------- live device permission state */
+
+  useEffect(() => {
+    let cleanups: (() => void)[] = [];
+    let cancelled = false;
+    async function watch(name: "camera" | "microphone", set: (s: PermissionState) => void) {
+      try {
+        const status = await navigator.permissions.query({ name: name as PermissionName });
+        if (cancelled) return;
+        set(status.state);
+        const onChange = () => set(status.state);
+        status.addEventListener("change", onChange);
+        cleanups.push(() => status.removeEventListener("change", onChange));
+      } catch {
+        /* permissions API unsupported — treated as prompt */
+      }
+    }
+    void watch("camera", setCamPermission);
+    void watch("microphone", setMicPermission);
+    return () => {
+      cancelled = true;
+      cleanups.forEach((fn) => fn());
+    };
+  }, []);
 
   const prefsRef = useRef<Preferences>({ interests: [], wantGender: null, wantCountry: null });
   const localStreamRef = useRef<MediaStream | null>(null);
