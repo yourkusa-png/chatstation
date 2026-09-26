@@ -296,54 +296,15 @@ function ChatPage() {
               )}
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {!running ? (
-                <Button
-                  size="lg"
-                  className="glow-ring"
-                  onClick={() =>
-                    chat.start({
-                      interests,
-                      wantGender: isPremium && wantGender !== ANY ? wantGender : null,
-                      wantCountry: isPremium && wantCountry !== ANY ? wantCountry : null,
-                    })
-                  }
-                >
-                  <Play className="size-4" /> Start
-                </Button>
-              ) : (
-                <>
-                  <Button size="lg" variant="destructive" onClick={() => chat.stop()}>
-                    <Square className="size-4" /> Stop
-                  </Button>
-                  <Button size="lg" onClick={() => chat.next()}>
-                    <SkipForward className="size-4" /> Next
-                  </Button>
-                </>
-              )}
-
-              <Button variant="outline" size="icon" onClick={chat.toggleMic} aria-label="Toggle mic">
-                {chat.micOn ? <Mic className="size-4" /> : <MicOff className="size-4" />}
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={chat.toggleCam}
-                aria-label="Toggle camera"
-              >
-                {chat.camOn ? <Video className="size-4" /> : <VideoOff className="size-4" />}
-              </Button>
-
-              {chat.partner && (
-                <Button
-                  variant="outline"
-                  className="ml-auto text-destructive"
-                  onClick={() => setReportOpen(true)}
-                >
-                  <Flag className="size-4" /> Report
-                </Button>
-              )}
-            </div>
+            {permissionsDenied && (
+              <div className="mt-4 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm">
+                <ShieldAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
+                <p>
+                  Camera or microphone permission is blocked. Chat cannot start until you allow
+                  both in your browser's site settings, then reload this page.
+                </p>
+              </div>
+            )}
 
             {/* ---------------- preferences ---------------- */}
             <div className="mt-5 rounded-2xl border border-border bg-card p-5">
