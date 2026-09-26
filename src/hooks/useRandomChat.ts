@@ -115,6 +115,8 @@ export function useRandomChat() {
     setLocalStream(stream);
     setCamOn(true);
     setMicOn(true);
+    setCamPermission("granted");
+    setMicPermission("granted");
     return stream;
   }, []);
 
@@ -487,6 +489,8 @@ export function useRandomChat() {
     remoteStream,
     camOn,
     micOn,
+    camPermission,
+    micPermission,
     start,
     stop,
     next,
