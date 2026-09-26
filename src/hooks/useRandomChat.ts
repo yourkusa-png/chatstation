@@ -114,13 +114,6 @@ export function useRandomChat() {
   /* ------------------------------------------------------------ peer teardown */
 
   const teardownPeer = useCallback(() => {
-    pcRef.current?.getSenders().forEach((s) => {
-      try {
-        s.track?.stop === undefined ? undefined : undefined;
-      } catch {
-        /* noop */
-      }
-    });
     try {
       pcRef.current?.close();
     } catch {
