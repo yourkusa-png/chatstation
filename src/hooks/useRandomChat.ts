@@ -136,8 +136,8 @@ export function useRandomChat() {
     const prefs = prefsRef.current;
     const { data, error: rpcError } = await supabase.rpc("join_queue", {
       p_interests: prefs.interests,
-      p_want_gender: prefs.wantGender,
-      p_want_country: prefs.wantCountry,
+      p_want_gender: prefs.wantGender as string,
+      p_want_country: prefs.wantCountry as string,
     });
     if (rpcError) throw new Error(rpcError.message);
     return (data as string | null) ?? null;

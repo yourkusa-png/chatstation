@@ -133,7 +133,7 @@ function AdminPage() {
   async function setStatus(id: string, status: ReportRow["status"]) {
     const { error } = await supabase
       .from("reports")
-      .update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() })
+      .update({ status, reviewed_by: user?.id ?? null, reviewed_at: new Date().toISOString() })
       .eq("id", id);
     if (error) {
       toast.error(error.message);
@@ -147,7 +147,7 @@ function AdminPage() {
       user_id: report.reported_id,
       reason: reasonLabel(report.reason),
       expires_at: hours ? new Date(Date.now() + hours * 3600_000).toISOString() : null,
-      created_by: user?.id,
+      created_by: user?.id ?? null,
     });
     if (error) {
       toast.error(error.message);
