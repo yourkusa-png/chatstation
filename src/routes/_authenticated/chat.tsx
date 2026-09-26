@@ -439,6 +439,114 @@ function ChatPage() {
         </div>
       </main>
 
+      {/* ---------------- bottom control bar ---------------- */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-2 px-4 py-3 sm:gap-3">
+          {/* mic */}
+          <div className="flex flex-col items-center gap-1">
+            <Button
+              variant={chat.micOn && permissionsGranted ? "outline" : "destructive"}
+              size="icon"
+              className="size-11 rounded-full"
+              onClick={chat.toggleMic}
+              disabled={!permissionsGranted || !chat.localStream}
+              aria-label="Toggle microphone"
+            >
+              {chat.micOn && permissionsGranted ? (
+                <Mic className="size-5" />
+              ) : (
+                <MicOff className="size-5" />
+              )}
+            </Button>
+            <span className="text-[10px] text-muted-foreground">
+              {chat.micPermission === "granted" ? (chat.micOn ? "Mic on" : "Mic off") : "Mic blocked"}
+            </span>
+          </div>
+
+          {/* camera */}
+          <div className="flex flex-col items-center gap-1">
+            <Button
+              variant={chat.camOn && permissionsGranted ? "outline" : "destructive"}
+              size="icon"
+              className="size-11 rounded-full"
+              onClick={chat.toggleCam}
+              disabled={!permissionsGranted || !chat.localStream}
+              aria-label="Toggle camera"
+            >
+              {chat.camOn && permissionsGranted ? (
+                <Video className="size-5" />
+              ) : (
+                <VideoOff className="size-5" />
+              )}
+            </Button>
+            <span className="text-[10px] text-muted-foreground">
+              {chat.camPermission === "granted" ? (chat.camOn ? "Cam on" : "Cam off") : "Cam blocked"}
+            </span>
+          </div>
+
+          {/* start / stop / next */}
+          {!permissionsGranted ? (
+            <Button size="lg" className="glow-ring" onClick={allowDevices}>
+              <Video className="size-4" /> Allow camera & mic
+            </Button>
+          ) : !running ? (
+            <Button
+              size="lg"
+              className="glow-ring"
+              onClick={() =>
+                chat.start({
+                  interests,
+                  wantGender: isPremium && wantGender !== ANY ? wantGender : null,
+                  wantCountry: isPremium && wantCountry !== ANY ? wantCountry : null,
+                })
+              }
+            >
+              <Play className="size-4" /> Start
+            </Button>
+          ) : (
+            <>
+              <Button size="lg" variant="destructive" onClick={() => chat.stop()}>
+                <Square className="size-4" /> Stop
+              </Button>
+              <Button size="lg" onClick={() => chat.next()}>
+                <SkipForward className="size-4" /> Next
+              </Button>
+            </>
+          )}
+
+          {/* report */}
+          {chat.partner && (
+            <div className="flex flex-col items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-11 rounded-full text-destructive"
+                onClick={() => setReportOpen(true)}
+                aria-label="Report"
+              >
+                <Flag className="size-5" />
+              </Button>
+              <span className="text-[10px] text-muted-foreground">Report</span>
+            </div>
+          )}
+
+          {/* profile */}
+          <div className="flex flex-col items-center gap-1">
+            <Button
+              asChild
+              variant="outline"
+              size="icon"
+              className="size-11 rounded-full"
+            >
+              <Link to="/profile" aria-label="Profile">
+                <User className="size-5" />
+              </Link>
+            </Button>
+            <span className="text-[10px] text-muted-foreground">Profile</span>
+          </div>
+        </div>
+      </div>
+
       <Dialog open={reportOpen} onOpenChange={setReportOpen}>
         <DialogContent>
           <DialogHeader>
