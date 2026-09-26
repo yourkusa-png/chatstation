@@ -491,6 +491,7 @@ export function useRandomChat() {
     micOn,
     camPermission,
     micPermission,
+    requestPermissions: ensureMedia,
     start,
     stop,
     next,
