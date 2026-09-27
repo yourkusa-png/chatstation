@@ -62,6 +62,7 @@ export function useRandomChat() {
   const [partner, setPartner] = useState<PartnerProfile | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [partnerTyping, setPartnerTyping] = useState(false);
+  const [likesReceived, setLikesReceived] = useState(0);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [camOn, setCamOn] = useState(true);
@@ -266,6 +267,10 @@ export function useRandomChat() {
     signalRef.current?.send({ type: "broadcast", event: "typing", payload: {} });
   }, []);
 
+  const sendLike = useCallback(() => {
+    signalRef.current?.send({ type: "broadcast", event: "like", payload: {} });
+  }, []);
+
   /* ------------------------------------------------- watch for a match while queued */
 
   useEffect(() => {
@@ -418,6 +423,9 @@ export function useRandomChat() {
         } else {
           pendingIceRef.current.push(candidate);
         }
+      })
+      .on("broadcast", { event: "like" }, () => {
+        setLikesReceived((n) => n + 1);
       })
       .on("broadcast", { event: "typing" }, () => {
         setPartnerTyping(true);
