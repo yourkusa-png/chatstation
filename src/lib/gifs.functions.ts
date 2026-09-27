@@ -28,7 +28,8 @@ export const searchGifs = createServerFn({ method: "POST" })
     const gifs = (json.data?.data ?? [])
       .map((item) => {
         const f = item.file ?? {};
-        const url = f.md?.gif?.url ?? f.sm?.gif?.url ?? f.xs?.gif?.url ?? f.md?.webp?.url;
+        const url =
+          f["md"]?.["gif"]?.url ?? f["sm"]?.["gif"]?.url ?? f["xs"]?.["gif"]?.url ?? f["md"]?.["webp"]?.url;
         return url ? { id: String(item.id), url } : null;
       })
       .filter((g): g is { id: string; url: string } => g !== null);
