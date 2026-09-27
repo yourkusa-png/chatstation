@@ -15,6 +15,8 @@ import {
   Lock,
   Loader2,
   ShieldAlert,
+  SlidersHorizontal,
+  LogOut,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -77,6 +79,7 @@ function ChatPage() {
   const [reportReason, setReportReason] = useState("harassment");
   const [reportDetails, setReportDetails] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const isPremium = profile?.is_premium ?? false;
 
@@ -246,300 +249,269 @@ function ChatPage() {
     }
   }
 
+  const connected = chat.status === "connected";
+  const overlayBtn =
+    "size-11 rounded-full border border-border/50 bg-background/60 text-foreground backdrop-blur hover:bg-background/80";
+
   return (
-    <div className="min-h-screen">
+    <div className="flex h-dvh flex-col overflow-hidden">
       <SiteHeader onDisableDevices={chat.disableDevices} />
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 pb-32">
-        <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-          {/* ---------------- video ---------------- */}
-          <section>
-            <div className="relative aspect-video overflow-hidden rounded-2xl border border-border bg-black">
-              <video
-                ref={remoteRef}
-                autoPlay
-                playsInline
-                className="size-full object-cover"
-              />
-              {chat.status !== "connected" && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface/90 text-center">
-                  {(chat.status === "searching" ||
-                    chat.status === "connecting" ||
-                    chat.status === "starting") && (
-                    <Loader2 className="size-7 animate-spin text-primary" />
-                  )}
-                  <p className="font-display text-lg">{statusText[chat.status]}</p>
-                  {chat.status === "idle" && (
-                    <p className="max-w-xs text-sm text-muted-foreground">
-                      Press start and we will drop you into a call with the next person waiting.
-                    </p>
-                  )}
-                  {chat.status === "partner-left" && (
-                    <Button onClick={() => chat.next()}>Find someone new</Button>
-                  )}
-                </div>
-              )}
+      <main className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col sm:py-3">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface sm:rounded-3xl sm:border sm:border-border">
+          {/* ---------------- stranger (top) ---------------- */}
+          <section className="relative min-h-0 flex-1 overflow-hidden bg-background">
+            <video ref={remoteRef} autoPlay playsInline className="size-full object-cover" />
 
-              <div className="absolute bottom-3 right-3 h-24 w-36 overflow-hidden rounded-lg border border-border bg-black sm:h-32 sm:w-48">
-                <video
-                  ref={localRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="size-full scale-x-[-1] object-cover"
-                />
-              </div>
-
-              {chat.status === "connected" && chat.partner && (
-                <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-background/80 px-3 py-1.5 text-xs backdrop-blur">
-                  <span className="size-1.5 rounded-full bg-primary" />
-                  {chat.partner.display_name} · {genderLabel(chat.partner.gender)} ·{" "}
-                  {countryLabel(chat.partner.country)}
-                </div>
-              )}
-            </div>
-
-            {permissionsDenied && (
-              <div className="mt-4 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm">
-                <ShieldAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
-                <p>
-                  Camera or microphone permission is blocked. Chat cannot start until you allow
-                  both in your browser's site settings, then reload this page.
-                </p>
+            {!connected && (
+              <div className="grain absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
+                {(chat.status === "searching" ||
+                  chat.status === "connecting" ||
+                  chat.status === "starting") && (
+                  <Loader2 className="size-7 animate-spin text-primary" />
+                )}
+                <p className="font-display text-lg">{statusText[chat.status]}</p>
+                {chat.status === "idle" && (
+                  <p className="max-w-xs text-sm text-muted-foreground">
+                    Press Start and we will connect you with the next person waiting.
+                  </p>
+                )}
+                {chat.status === "partner-left" && (
+                  <Button onClick={() => chat.next()}>Find someone new</Button>
+                )}
+                {permissionsDenied && (
+                  <p className="flex max-w-xs items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-left text-xs">
+                    <ShieldAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
+                    Camera or mic is blocked. Allow both in your browser's site settings, then reload.
+                  </p>
+                )}
               </div>
             )}
 
-            {/* ---------------- preferences ---------------- */}
-            <div className="mt-5 rounded-2xl border border-border bg-card p-5">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Matching
-              </h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                <div className="space-y-2 sm:col-span-3">
-                  <Label htmlFor="interests">
-                    Interests {isPremium ? "(comma separated)" : "(1 tag on Free)"}
-                  </Label>
-                  <Input
-                    id="interests"
-                    value={interestText}
-                    onChange={(e) => setInterestText(e.target.value)}
-                    placeholder="music, football, coding"
-                    disabled={running}
-                  />
-                  <div className="flex flex-wrap gap-1.5">
-                    {interests.map((i) => (
-                      <Badge key={i} variant="secondary">
-                        {i}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1.5">
-                    Gender filter {!isPremium && <Lock className="size-3 text-muted-foreground" />}
-                  </Label>
-                  <Select
-                    value={wantGender}
-                    onValueChange={setWantGender}
-                    disabled={!isPremium || running}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Anyone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={ANY}>Anyone</SelectItem>
-                      {GENDERS.map((g) => (
-                        <SelectItem key={g.value} value={g.value}>
-                          {g.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-1.5">
-                    Country filter {!isPremium && <Lock className="size-3 text-muted-foreground" />}
-                  </Label>
-                  <Select
-                    value={wantCountry}
-                    onValueChange={setWantCountry}
-                    disabled={!isPremium || running}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Anywhere" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={ANY}>Anywhere</SelectItem>
-                      {COUNTRIES.filter((c) => c.value !== "XX").map((c) => (
-                        <SelectItem key={c.value} value={c.value}>
-                          {c.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-end">
-                  {!isPremium && (
-                    <Button asChild variant="outline" className="w-full">
-                      <Link to="/pricing">Unlock filters</Link>
-                    </Button>
-                  )}
-                </div>
+            {connected && chat.partner && (
+              <div className="absolute left-3 top-3 flex max-w-[70%] items-center gap-2 rounded-full border border-border/50 bg-background/60 py-1 pl-1 pr-3 text-xs backdrop-blur">
+                <span className="flex size-8 items-center justify-center rounded-full bg-primary font-display text-sm font-bold text-primary-foreground">
+                  {chat.partner.display_name.slice(0, 1).toUpperCase()}
+                </span>
+                <span className="truncate">
+                  {chat.partner.display_name} · {countryLabel(chat.partner.country)}
+                </span>
               </div>
-            </div>
+            )}
+
+            {running && (
+              <div className="absolute right-3 top-3 flex flex-col gap-2">
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  className="size-11 rounded-full"
+                  onClick={() => setReportOpen(true)}
+                  disabled={!chat.partner}
+                  aria-label="Report"
+                >
+                  <Flag className="size-5" />
+                </Button>
+                <Button size="icon" className={overlayBtn} onClick={() => chat.next()} aria-label="Next">
+                  <SkipForward className="size-5" />
+                </Button>
+              </div>
+            )}
           </section>
 
-          {/* ---------------- text chat ---------------- */}
-          <section className="flex h-[520px] flex-col rounded-2xl border border-border bg-card lg:h-auto">
-            <div className="border-b border-border px-4 py-3">
-              <p className="text-sm font-semibold">
-                {chat.partner ? `Chat with ${chat.partner.display_name}` : "Chat"}
-              </p>
-            </div>
-            <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto p-4">
-              {chat.messages.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  {chat.status === "connected"
-                    ? "Say hi 👋"
-                    : "Messages appear here once you are matched."}
-                </p>
+          {/* ---------------- you (bottom) ---------------- */}
+          <section className="relative min-h-0 flex-1 overflow-hidden border-t border-border bg-background">
+            <video
+              ref={localRef}
+              autoPlay
+              playsInline
+              muted
+              className="size-full scale-x-[-1] object-cover"
+            />
+            {!chat.localStream && (
+              <div className="absolute inset-0 flex items-center justify-center bg-surface">
+                <VideoOff className="size-8 text-muted-foreground" />
+              </div>
+            )}
+
+            {/* top-left: devices */}
+            <div className="absolute left-3 top-3 flex gap-2">
+              <Button
+                size="icon"
+                className={chat.micOn && permissionsGranted ? overlayBtn : "size-11 rounded-full"}
+                variant={chat.micOn && permissionsGranted ? "default" : "destructive"}
+                onClick={chat.toggleMic}
+                disabled={!permissionsGranted}
+                aria-label="Toggle microphone"
+              >
+                {chat.micOn && permissionsGranted ? <Mic className="size-5" /> : <MicOff className="size-5" />}
+              </Button>
+              <Button
+                size="icon"
+                className={chat.camOn && permissionsGranted ? overlayBtn : "size-11 rounded-full"}
+                variant={chat.camOn && permissionsGranted ? "default" : "destructive"}
+                onClick={chat.toggleCam}
+                disabled={!permissionsGranted}
+                aria-label="Toggle camera"
+              >
+                {chat.camOn && permissionsGranted ? <Video className="size-5" /> : <VideoOff className="size-5" />}
+              </Button>
+              {!running && (
+                <Button size="icon" className={overlayBtn} onClick={() => setFiltersOpen(true)} aria-label="Match filters">
+                  <SlidersHorizontal className="size-5" />
+                </Button>
               )}
-              {chat.messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={
-                    m.sender_id === user?.id
-                      ? "ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-3 py-2 text-sm text-primary-foreground"
-                      : "w-fit max-w-[85%] rounded-2xl rounded-bl-sm bg-secondary px-3 py-2 text-sm"
+            </div>
+
+            {/* top-right: start / exit */}
+            <div className="absolute right-3 top-3">
+              {!permissionsGranted ? (
+                <Button className="h-11 rounded-full px-5" onClick={allowDevices}>
+                  <Video className="size-4" /> Allow camera
+                </Button>
+              ) : !running ? (
+                <Button
+                  className="glow-ring h-11 rounded-full px-5"
+                  onClick={() =>
+                    chat.start({
+                      interests,
+                      wantGender: isPremium && wantGender !== ANY ? wantGender : null,
+                      wantCountry: isPremium && wantCountry !== ANY ? wantCountry : null,
+                    })
                   }
                 >
-                  {m.body}
-                </div>
-              ))}
-              {chat.partnerTyping && (
-                <p className="text-xs italic text-muted-foreground">Stranger is typing…</p>
+                  <Play className="size-4" /> Start
+                </Button>
+              ) : (
+                <Button variant="destructive" className="h-11 rounded-full px-5" onClick={() => chat.stop()}>
+                  <LogOut className="size-4" /> Exit
+                </Button>
               )}
             </div>
-            <form onSubmit={handleSend} className="flex gap-2 border-t border-border p-3">
+
+            {/* messages overlay */}
+            <div
+              ref={scrollRef}
+              className="absolute inset-x-3 bottom-20 flex max-h-[45%] flex-col items-end gap-1.5 overflow-y-auto"
+            >
+              {chat.messages.slice(-30).map((m) => {
+                const mine = m.sender_id === user?.id;
+                return (
+                  <div key={m.id} className="flex max-w-[85%] flex-col items-end">
+                    <span className="text-[10px] text-foreground/80 drop-shadow">
+                      {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}{" "}
+                      <span className="font-semibold">{mine ? "You" : chat.partner?.display_name ?? "Stranger"}</span>
+                    </span>
+                    <span
+                      className={
+                        mine
+                          ? "rounded-2xl bg-primary px-3 py-1.5 text-sm text-primary-foreground"
+                          : "rounded-2xl bg-background/70 px-3 py-1.5 text-sm backdrop-blur"
+                      }
+                    >
+                      {m.body}
+                    </span>
+                  </div>
+                );
+              })}
+              {chat.partnerTyping && (
+                <span className="rounded-full bg-background/70 px-3 py-1 text-xs italic backdrop-blur">
+                  typing…
+                </span>
+              )}
+            </div>
+
+            {/* input bar */}
+            <form onSubmit={handleSend} className="absolute inset-x-3 bottom-3 flex items-center gap-2">
               <Input
                 value={draft}
                 onChange={(e) => {
                   setDraft(e.target.value);
                   chat.sendTyping();
                 }}
-                placeholder={chat.status === "connected" ? "Type a message" : "Not connected"}
-                disabled={chat.status !== "connected"}
+                placeholder={connected ? "Say something…" : "Chat opens when connected"}
+                disabled={!connected}
                 maxLength={500}
+                className="h-12 flex-1 rounded-full border-border/50 bg-background/60 px-5 backdrop-blur"
               />
-              <Button type="submit" size="icon" disabled={chat.status !== "connected" || !draft.trim()}>
-                <Send className="size-4" />
+              <Button
+                type="submit"
+                size="icon"
+                className="size-12 shrink-0 rounded-full"
+                disabled={!connected || !draft.trim()}
+                aria-label="Send"
+              >
+                <Send className="size-5" />
               </Button>
             </form>
           </section>
         </div>
       </main>
 
-      {/* ---------------- bottom control bar ---------------- */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 shadow-2xl backdrop-blur">
-        <div className="mx-auto grid min-h-24 w-full max-w-lg grid-cols-[64px_64px_minmax(128px,1fr)_64px] items-center gap-2 px-3 py-2 sm:max-w-2xl sm:grid-cols-[72px_72px_minmax(160px,1fr)_72px]">
-          {/* mic */}
-          <div className="flex flex-col items-center gap-1">
-            <Button
-              variant={chat.micOn && permissionsGranted ? "secondary" : "destructive"}
-              size="icon"
-              className="size-11 rounded-full shadow-none"
-              onClick={chat.toggleMic}
-              disabled={!permissionsGranted || !chat.localStream}
-              aria-label="Toggle microphone"
-            >
-              {chat.micOn && permissionsGranted ? (
-                <Mic className="size-5" />
-              ) : (
-                <MicOff className="size-5" />
-              )}
-            </Button>
-            <span className="whitespace-nowrap text-[10px] text-muted-foreground">
-              {chat.micOn && permissionsGranted ? "Mic on" : "Mic off"}
-            </span>
+      {/* ---------------- match filters ---------------- */}
+      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Who do you want to meet?</DialogTitle>
+            <DialogDescription>Interests help match you with similar people.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="interests">
+                Interests {isPremium ? "(comma separated)" : "(1 tag on Free)"}
+              </Label>
+              <Input
+                id="interests"
+                value={interestText}
+                onChange={(e) => setInterestText(e.target.value)}
+                placeholder="music, football, coding"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {interests.map((i) => (
+                  <Badge key={i} variant="secondary">{i}</Badge>
+                ))}
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  Gender {!isPremium && <Lock className="size-3 text-muted-foreground" />}
+                </Label>
+                <Select value={wantGender} onValueChange={setWantGender} disabled={!isPremium}>
+                  <SelectTrigger><SelectValue placeholder="Anyone" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ANY}>Anyone</SelectItem>
+                    {GENDERS.map((g) => (
+                      <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  Country {!isPremium && <Lock className="size-3 text-muted-foreground" />}
+                </Label>
+                <Select value={wantCountry} onValueChange={setWantCountry} disabled={!isPremium}>
+                  <SelectTrigger><SelectValue placeholder="Anywhere" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ANY}>Anywhere</SelectItem>
+                    {COUNTRIES.filter((c) => c.value !== "XX").map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
-
-          {/* camera */}
-          <div className="flex flex-col items-center gap-1">
-            <Button
-              variant={chat.camOn && permissionsGranted ? "secondary" : "destructive"}
-              size="icon"
-              className="size-11 rounded-full shadow-none"
-              onClick={chat.toggleCam}
-              disabled={!permissionsGranted || !chat.localStream}
-              aria-label="Toggle camera"
-            >
-              {chat.camOn && permissionsGranted ? (
-                <Video className="size-5" />
-              ) : (
-                <VideoOff className="size-5" />
-              )}
-            </Button>
-            <span className="whitespace-nowrap text-[10px] text-muted-foreground">
-              {chat.camOn && permissionsGranted ? "Camera on" : "Camera off"}
-            </span>
-          </div>
-
-          {/* start / stop / next */}
-          <div className="flex min-w-0 flex-col items-stretch gap-1">
-            {!permissionsGranted ? (
-              <Button size="lg" className="h-12 w-full" onClick={allowDevices}>
-                <Video className="size-4" /> Allow devices
-              </Button>
-            ) : !running ? (
-              <Button
-                size="lg"
-                className="glow-ring h-12 w-full"
-                onClick={() =>
-                  chat.start({
-                    interests,
-                    wantGender: isPremium && wantGender !== ANY ? wantGender : null,
-                    wantCountry: isPremium && wantCountry !== ANY ? wantCountry : null,
-                  })
-                }
-              >
-                <Play className="size-4" /> Start chatting
-              </Button>
-            ) : (
-              <Button size="lg" variant="destructive" className="h-12 w-full" onClick={() => chat.stop()}>
-                <Square className="size-4" /> Stop
+          <DialogFooter>
+            {!isPremium && (
+              <Button asChild variant="outline">
+                <Link to="/pricing">Unlock filters</Link>
               </Button>
             )}
-            <span className="truncate text-center text-[10px] text-muted-foreground">
-              {!permissionsGranted ? "Camera & mic required" : statusText[chat.status]}
-            </span>
-          </div>
+            <Button onClick={() => setFiltersOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          {/* report */}
-          {running ? (
-            <div className="flex flex-col items-center gap-1">
-              <Button
-                variant="secondary"
-                size="icon"
-                className="size-11 rounded-full"
-                onClick={() => chat.next()}
-                aria-label="Next chat"
-              >
-                <SkipForward className="size-5" />
-              </Button>
-              <span className="text-[10px] text-muted-foreground">Next</span>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-1">
-              <Button variant="secondary" size="icon" className="size-11 rounded-full" disabled aria-label="Next chat">
-                <SkipForward className="size-5" />
-              </Button>
-              <span className="text-[10px] text-muted-foreground">Next</span>
-            </div>
-          )}
-        </div>
-      </div>
 
       <Dialog open={reportOpen} onOpenChange={setReportOpen}>
         <DialogContent>
