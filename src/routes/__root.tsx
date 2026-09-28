@@ -79,12 +79,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "StaticRoom — random video chat with strangers" },
+      { title: "CHAT STATION — random video chat with strangers" },
       {
         name: "description",
         content: "Get paired with a random stranger for a live video chat. Skip anytime.",
       },
-      { property: "og:title", content: "StaticRoom — random video chat with strangers" },
+      { property: "og:title", content: "CHAT STATION — random video chat with strangers" },
       {
         property: "og:description",
         content: "Get paired with a random stranger for a live video chat. Skip anytime.",

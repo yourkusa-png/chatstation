@@ -13,9 +13,9 @@ import { useAuth } from "@/hooks/useAuth";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in · StaticRoom" },
-      { name: "description", content: "Create a StaticRoom account to start random video chats." },
-      { property: "og:title", content: "Sign in · StaticRoom" },
+      { title: "Sign in · CHAT STATION" },
+      { name: "description", content: "Create a CHAT STATION account to start random video chats." },
+      { property: "og:title", content: "Sign in · CHAT STATION" },
       { property: "og:description", content: "Create an account to start random video chats." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -177,7 +177,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
           <Radio className="size-4" />
         </span>
-        <span className="font-display text-lg font-bold">StaticRoom</span>
+        <span className="font-display text-lg font-bold">CHAT STATION</span>
       </Link>
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-7">{children}</div>
     </div>

@@ -8,13 +8,13 @@ import { useAuth } from "@/hooks/useAuth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "StaticRoom — random video chat with strangers" },
+      { title: "CHAT STATION — random video chat with strangers" },
       {
         name: "description",
         content:
           "Press start and get paired with a random stranger for a live video call. Text chat, interest matching and skip whenever you like.",
       },
-      { property: "og:title", content: "StaticRoom — random video chat with strangers" },
+      { property: "og:title", content: "CHAT STATION — random video chat with strangers" },
       {
         property: "og:description",
         content: "Press start and meet someone new on camera. Skip anytime.",
@@ -79,7 +79,7 @@ function Landing() {
                 <span className="block text-primary">stranger.</span>
               </h1>
               <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-                StaticRoom drops you straight into a one-to-one video call with somebody else who
+                CHAT STATION drops you straight into a one-to-one video call with somebody else who
                 pressed start. Say hi, have a chat, or skip to the next face.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
@@ -103,7 +103,7 @@ function Landing() {
                     <span className="size-2 rounded-full bg-accent" />
                     <span className="size-2 rounded-full bg-primary" />
                     <span className="ml-2 text-xs text-muted-foreground">
-                      staticroom · connected
+                      chat station · connected
                     </span>
                   </div>
                   <div className="relative flex-1 bg-[radial-gradient(circle_at_50%_40%,oklch(0.3_0.02_265),oklch(0.18_0.012_265))]">
@@ -146,7 +146,7 @@ function Landing() {
             <h2 className="text-3xl font-bold">House rules</h2>
             <ul className="mt-6 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
               <li className="rounded-lg border border-border bg-card p-4">
-                You must be 18 or older to use StaticRoom.
+                You must be 18 or older to use CHAT STATION.
               </li>
               <li className="rounded-lg border border-border bg-card p-4">
                 No nudity, sexual content or harassment on camera.
@@ -164,7 +164,7 @@ function Landing() {
 
       <footer className="border-t border-border">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-4 px-4 py-8 text-sm text-muted-foreground">
-          <span>© {new Date().getFullYear()} StaticRoom</span>
+          <span>© {new Date().getFullYear()} CHAT STATION</span>
           <Link to="/pricing" className="ml-auto hover:text-foreground">
             Pricing
           </Link>

@@ -9,13 +9,13 @@ import { useAuth } from "@/hooks/useAuth";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing · StaticRoom" },
+      { title: "Pricing · CHAT STATION" },
       {
         name: "description",
         content:
-          "StaticRoom is free to use. Premium adds gender and country filters, priority matching and no ads.",
+          "CHAT STATION is free to use. Premium adds gender and country filters, priority matching and no ads.",
       },
-      { property: "og:title", content: "Pricing · StaticRoom" },
+      { property: "og:title", content: "Pricing · CHAT STATION" },
       {
         property: "og:description",
         content: "Free random video chat, or Premium for filters and priority matching.",

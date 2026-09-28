@@ -12,6 +12,8 @@ import {
   Play,
   Square,
   Send,
+  Heart,
+  SwitchCamera,
   Lock,
   Loader2,
   ShieldAlert,
@@ -50,9 +52,9 @@ import { COUNTRIES, GENDERS, REPORT_REASONS, countryLabel, genderLabel } from "@
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({
     meta: [
-      { title: "Video chat · StaticRoom" },
-      { name: "description", content: "Your live random video chat room on StaticRoom." },
-      { property: "og:title", content: "Video chat · StaticRoom" },
+      { title: "Video chat · CHAT STATION" },
+      { name: "description", content: "Your live random video chat room on CHAT STATION." },
+      { property: "og:title", content: "Video chat · CHAT STATION" },
       { property: "og:description", content: "Your live random video chat room." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -80,6 +82,7 @@ function ChatPage() {
   const [reportDetails, setReportDetails] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [likeBurst, setLikeBurst] = useState(0);
 
   const isPremium = profile?.is_premium ?? false;
 
@@ -115,6 +118,13 @@ function ChatPage() {
   useEffect(() => {
     if (chat.error) toast.error(chat.error);
   }, [chat.error]);
+
+  useEffect(() => {
+    if (chat.likesReceived === 0) return;
+    setLikeBurst((value) => value + 1);
+    const timer = window.setTimeout(() => setLikeBurst(0), 1400);
+    return () => window.clearTimeout(timer);
+  }, [chat.likesReceived]);
 
   useEffect(() => {
     if (profile?.interests?.length) setInterestText(profile.interests.join(", "));
@@ -203,7 +213,7 @@ function ChatPage() {
           <div className="rounded-2xl border border-border bg-card p-7">
             <h1 className="text-2xl font-bold">Before you join</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              StaticRoom pairs you with real strangers on camera. You must be 18 or older, keep
+              CHAT STATION pairs you with real strangers on camera. You must be 18 or older, keep
               clothes on, and treat people decently. Reports are reviewed and accounts get banned.
             </p>
             <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-lg border border-border p-4">
@@ -255,7 +265,11 @@ function ChatPage() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <SiteHeader onDisableDevices={chat.disableDevices} />
+      <SiteHeader
+        onDisableDevices={chat.disableDevices}
+        matchCountry={wantCountry}
+        onMatchCountryChange={setWantCountry}
+      />
       <main className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col sm:py-3">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface sm:rounded-3xl sm:border sm:border-border">
           {/* ---------------- stranger (top) ---------------- */}
@@ -302,6 +316,19 @@ function ChatPage() {
               <div className="absolute right-3 top-3 flex flex-col gap-2">
                 <Button
                   size="icon"
+                  className={overlayBtn}
+                  onClick={() => {
+                    chat.sendLike();
+                    setLikeBurst((value) => value + 1);
+                    window.setTimeout(() => setLikeBurst(0), 1400);
+                  }}
+                  disabled={!connected}
+                  aria-label="Send like"
+                >
+                  <Heart className="size-5 fill-current text-destructive" />
+                </Button>
+                <Button
+                  size="icon"
                   variant="destructive"
                   className="size-11 rounded-full"
                   onClick={() => setReportOpen(true)}
@@ -315,6 +342,12 @@ function ChatPage() {
                 </Button>
               </div>
             )}
+            {likeBurst > 0 && (
+              <div key={`${chat.likesReceived}-${likeBurst}`} className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-live="polite">
+                <Heart className="like-pop size-20 fill-destructive text-destructive" />
+                <span className="sr-only">Like received</span>
+              </div>
+            )}
           </section>
 
           {/* ---------------- you (bottom) ---------------- */}
@@ -324,7 +357,7 @@ function ChatPage() {
               autoPlay
               playsInline
               muted
-              className="size-full scale-x-[-1] object-cover"
+              className={`size-full object-cover ${chat.facingMode === "user" ? "scale-x-[-1]" : ""}`}
             />
             {!chat.localStream && (
               <div className="absolute inset-0 flex items-center justify-center bg-surface">
@@ -354,6 +387,15 @@ function ChatPage() {
               >
                 {chat.camOn && permissionsGranted ? <Video className="size-5" /> : <VideoOff className="size-5" />}
               </Button>
+              <Button
+                size="icon"
+                className={overlayBtn}
+                onClick={() => void chat.switchCamera()}
+                disabled={!permissionsGranted}
+                aria-label="Switch camera"
+              >
+                <SwitchCamera className="size-5" />
+              </Button>
               {!running && (
                 <Button size="icon" className={overlayBtn} onClick={() => setFiltersOpen(true)} aria-label="Match filters">
                   <SlidersHorizontal className="size-5" />
@@ -373,8 +415,8 @@ function ChatPage() {
                   onClick={() =>
                     chat.start({
                       interests,
-                      wantGender: isPremium && wantGender !== ANY ? wantGender : null,
-                      wantCountry: isPremium && wantCountry !== ANY ? wantCountry : null,
+                      wantGender: wantGender !== ANY ? wantGender : null,
+                      wantCountry: wantCountry !== ANY ? wantCountry : null,
                     })
                   }
                 >
@@ -473,9 +515,9 @@ function ChatPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
-                  Gender {!isPremium && <Lock className="size-3 text-muted-foreground" />}
+                  Gender
                 </Label>
-                <Select value={wantGender} onValueChange={setWantGender} disabled={!isPremium}>
+                <Select value={wantGender} onValueChange={setWantGender}>
                   <SelectTrigger><SelectValue placeholder="Anyone" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value={ANY}>Anyone</SelectItem>
@@ -487,9 +529,9 @@ function ChatPage() {
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
-                  Country {!isPremium && <Lock className="size-3 text-muted-foreground" />}
+                  Country
                 </Label>
-                <Select value={wantCountry} onValueChange={setWantCountry} disabled={!isPremium}>
+                <Select value={wantCountry} onValueChange={setWantCountry}>
                   <SelectTrigger><SelectValue placeholder="Anywhere" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value={ANY}>Anywhere</SelectItem>
@@ -502,11 +544,6 @@ function ChatPage() {
             </div>
           </div>
           <DialogFooter>
-            {!isPremium && (
-              <Button asChild variant="outline">
-                <Link to="/pricing">Unlock filters</Link>
-              </Button>
-            )}
             <Button onClick={() => setFiltersOpen(false)}>Done</Button>
           </DialogFooter>
         </DialogContent>

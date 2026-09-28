@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   CameraOff,
+  Globe2,
   Crown,
   LogOut,
   Menu,
@@ -30,18 +31,26 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteMyAccount } from "@/lib/account.functions";
+import { COUNTRIES, countryLabel } from "@/lib/constants";
 import { toast } from "sonner";
 
 type SiteHeaderProps = {
   onDisableDevices?: () => Promise<void> | void;
+  matchCountry?: string;
+  onMatchCountryChange?: (country: string) => void;
 };
 
-export function SiteHeader({ onDisableDevices }: SiteHeaderProps) {
+export function SiteHeader({ onDisableDevices, matchCountry, onMatchCountryChange }: SiteHeaderProps) {
   const { user, profile, isStaff, loading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -82,7 +91,7 @@ export function SiteHeader({ onDisableDevices }: SiteHeaderProps) {
           <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Radio className="size-4" />
           </span>
-          <span className="font-display text-lg font-bold tracking-tight">StaticRoom</span>
+          <span className="font-display text-base font-bold sm:text-lg">CHAT STATION</span>
         </Link>
 
         <nav className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
@@ -121,6 +130,23 @@ export function SiteHeader({ onDisableDevices }: SiteHeaderProps) {
                   <DropdownMenuItem asChild className="h-10 cursor-pointer">
                     <Link to="/pricing"><Crown /> Upgrade subscription</Link>
                   </DropdownMenuItem>
+                  {onMatchCountryChange && (
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="h-10 cursor-pointer">
+                        <Globe2 /> Country: {matchCountry === "__any__" ? "Anywhere" : countryLabel(matchCountry)}
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="max-h-72 w-56 overflow-y-auto">
+                        <DropdownMenuRadioGroup value={matchCountry} onValueChange={onMatchCountryChange}>
+                          <DropdownMenuRadioItem value="__any__">Anywhere</DropdownMenuRadioItem>
+                          {COUNTRIES.filter((country) => country.value !== "XX").map((country) => (
+                            <DropdownMenuRadioItem key={country.value} value={country.value}>
+                              {country.label}
+                            </DropdownMenuRadioItem>
+                          ))}
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  )}
                   <DropdownMenuItem
                     className="h-10 cursor-pointer"
                     onSelect={() => void handleDisableDevices()}

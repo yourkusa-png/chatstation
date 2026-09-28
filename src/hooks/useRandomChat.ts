@@ -67,6 +67,7 @@ export function useRandomChat() {
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [camOn, setCamOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [camPermission, setCamPermission] = useState<PermissionState>("prompt");
   const [micPermission, setMicPermission] = useState<PermissionState>("prompt");
 
@@ -109,7 +110,7 @@ export function useRandomChat() {
   const ensureMedia = useCallback(async () => {
     if (localStreamRef.current) return localStreamRef.current;
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: { ideal: facingMode } },
       audio: { echoCancellation: true, noiseSuppression: true },
     });
     localStreamRef.current = stream;
@@ -119,7 +120,7 @@ export function useRandomChat() {
     setCamPermission("granted");
     setMicPermission("granted");
     return stream;
-  }, []);
+  }, [facingMode]);
 
   const stopMedia = useCallback(() => {
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
@@ -142,6 +143,41 @@ export function useRandomChat() {
     track.enabled = !track.enabled;
     setMicOn(track.enabled);
   }, []);
+
+  const switchCamera = useCallback(async () => {
+    const currentStream = localStreamRef.current;
+    const currentTrack = currentStream?.getVideoTracks()[0];
+    if (!currentStream || !currentTrack) return;
+
+    const nextFacingMode = facingMode === "user" ? "environment" : "user";
+    try {
+      const cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: { ideal: nextFacingMode },
+        },
+        audio: false,
+      });
+      const nextTrack = cameraStream.getVideoTracks()[0];
+      if (!nextTrack) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      nextTrack.enabled = currentTrack.enabled;
+      const sender = pcRef.current?.getSenders().find((item) => item.track?.kind === "video");
+      if (sender) await sender.replaceTrack(nextTrack);
+      currentStream.removeTrack(currentTrack);
+      currentStream.addTrack(nextTrack);
+      currentTrack.stop();
+      localStreamRef.current = currentStream;
+      setLocalStream(new MediaStream(currentStream.getTracks()));
+      setFacingMode(nextFacingMode);
+    } catch {
+      setError("This device does not have another available camera.");
+    }
+  }, [facingMode]);
 
   /* ------------------------------------------------------------ peer teardown */
 
@@ -195,6 +231,7 @@ export function useRandomChat() {
       }
       keepSearchingRef.current = true;
       setMessages([]);
+      setLikesReceived(0);
       setStatus("searching");
       try {
         const matchId = await tryJoinQueue();
@@ -215,6 +252,7 @@ export function useRandomChat() {
     setMatch(null);
     setPartner(null);
     setMessages([]);
+    setLikesReceived(0);
     await supabase.rpc("leave_queue");
     if (current) await supabase.rpc("end_match", { p_match_id: current.id });
     stopMedia();
@@ -228,6 +266,7 @@ export function useRandomChat() {
     setMatch(null);
     setPartner(null);
     setMessages([]);
+    setLikesReceived(0);
     await supabase.rpc("leave_queue");
     if (current) await supabase.rpc("end_match", { p_match_id: current.id });
     stopMedia();
@@ -240,6 +279,7 @@ export function useRandomChat() {
     setMatch(null);
     setPartner(null);
     setMessages([]);
+    setLikesReceived(0);
     if (current) await supabase.rpc("end_match", { p_match_id: current.id });
     keepSearchingRef.current = true;
     setStatus("searching");
@@ -508,10 +548,12 @@ export function useRandomChat() {
     partner,
     messages,
     partnerTyping,
+    likesReceived,
     localStream,
     remoteStream,
     camOn,
     micOn,
+    facingMode,
     camPermission,
     micPermission,
     requestPermissions: ensureMedia,
@@ -521,8 +563,10 @@ export function useRandomChat() {
     next,
     sendMessage,
     sendTyping,
+    sendLike,
     toggleCam,
     toggleMic,
+    switchCamera,
     setError,
   };
 }

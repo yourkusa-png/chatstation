@@ -151,3 +151,17 @@
     0 0 0 1px oklch(0.86 0.21 128 / 0.35),
     0 0 40px -12px oklch(0.86 0.21 128 / 0.55);
 }
+
+@keyframes like-pop {
+  0% { opacity: 0; transform: translateY(1rem) scale(0.45); }
+  35% { opacity: 1; transform: translateY(0) scale(1.12); }
+  100% { opacity: 0; transform: translateY(-4rem) scale(0.9); }
+}
+
+@utility like-pop {
+  animation: like-pop 1.4s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .like-pop { animation: none; }
+}
