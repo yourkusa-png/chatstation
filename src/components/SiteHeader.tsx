@@ -136,7 +136,7 @@ export function SiteHeader({ onDisableDevices, matchCountry, onMatchCountryChang
                         <Globe2 /> Country: {matchCountry === "__any__" ? "Anywhere" : countryLabel(matchCountry)}
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="max-h-72 w-56 overflow-y-auto">
-                        <DropdownMenuRadioGroup value={matchCountry} onValueChange={onMatchCountryChange}>
+                        <DropdownMenuRadioGroup value={matchCountry ?? "__any__"} onValueChange={onMatchCountryChange}>
                           <DropdownMenuRadioItem value="__any__">Anywhere</DropdownMenuRadioItem>
                           {COUNTRIES.filter((country) => country.value !== "XX").map((country) => (
                             <DropdownMenuRadioItem key={country.value} value={country.value}>
