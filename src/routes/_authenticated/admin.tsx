@@ -14,9 +14,9 @@ import { REPORT_REASONS } from "@/lib/constants";
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Moderation · StaticRoom" },
-      { name: "description", content: "Review reports and manage bans on StaticRoom." },
-      { property: "og:title", content: "Moderation · StaticRoom" },
+      { title: "Moderation · CHAT STATION" },
+      { name: "description", content: "Review reports and manage bans on CHAT STATION." },
+      { property: "og:title", content: "Moderation · CHAT STATION" },
       { property: "og:description", content: "Review reports and manage bans." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

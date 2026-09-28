@@ -22,10 +22,10 @@ import { COUNTRIES, GENDERS } from "@/lib/constants";
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "Your profile · StaticRoom" },
-      { name: "description", content: "Update how strangers see you on StaticRoom." },
-      { property: "og:title", content: "Your profile · StaticRoom" },
-      { property: "og:description", content: "Update how strangers see you on StaticRoom." },
+      { title: "Your profile · CHAT STATION" },
+      { name: "description", content: "Update how strangers see you on CHAT STATION." },
+      { property: "og:title", content: "Your profile · CHAT STATION" },
+      { property: "og:description", content: "Update how strangers see you on CHAT STATION." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
