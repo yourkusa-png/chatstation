@@ -312,21 +312,26 @@ function ChatPage() {
               </div>
             )}
 
+            <div className="absolute right-3 top-3 z-10 flex flex-col gap-2">
+              <Button
+                size="icon"
+                className={overlayBtn}
+                onClick={() => {
+                  if (!connected) {
+                    toast("Start a chat to send a like");
+                    return;
+                  }
+                  chat.sendLike();
+                  setLikeBurst((value) => value + 1);
+                  window.setTimeout(() => setLikeBurst(0), 1400);
+                }}
+                aria-label="Send like"
+              >
+                <Heart className="size-5 fill-current text-destructive" />
+              </Button>
             {running && (
-              <div className="absolute right-3 top-3 flex flex-col gap-2">
-                <Button
-                  size="icon"
-                  className={overlayBtn}
-                  onClick={() => {
-                    chat.sendLike();
-                    setLikeBurst((value) => value + 1);
-                    window.setTimeout(() => setLikeBurst(0), 1400);
-                  }}
-                  disabled={!connected}
-                  aria-label="Send like"
-                >
-                  <Heart className="size-5 fill-current text-destructive" />
-                </Button>
+              <>
+
                 <Button
                   size="icon"
                   variant="destructive"
@@ -396,11 +401,9 @@ function ChatPage() {
               >
                 <SwitchCamera className="size-5" />
               </Button>
-              {!running && (
-                <Button size="icon" className={overlayBtn} onClick={() => setFiltersOpen(true)} aria-label="Match filters">
-                  <SlidersHorizontal className="size-5" />
-                </Button>
-              )}
+              <Button size="icon" className={overlayBtn} onClick={() => setFiltersOpen(true)} aria-label="Match filters">
+                <SlidersHorizontal className="size-5" />
+              </Button>
             </div>
 
             {/* top-right: start / exit */}
