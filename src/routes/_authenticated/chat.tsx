@@ -345,8 +345,9 @@ function ChatPage() {
                 <Button size="icon" className={overlayBtn} onClick={() => chat.next()} aria-label="Next">
                   <SkipForward className="size-5" />
                 </Button>
-              </div>
+              </>
             )}
+            </div>
             {likeBurst > 0 && (
               <div key={`${chat.likesReceived}-${likeBurst}`} className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-live="polite">
                 <Heart className="like-pop size-20 fill-destructive text-destructive" />
