@@ -145,26 +145,44 @@ export function useRandomChat() {
   }, []);
 
   const switchCamera = useCallback(async () => {
-    const currentStream = localStreamRef.current;
-    const currentTrack = currentStream?.getVideoTracks()[0];
-    if (!currentStream || !currentTrack) {
-      setError("Allow the camera first, then switch.");
-      return;
-    }
-
-    const nextFacingMode = facingMode === "user" ? "environment" : "user";
     try {
-      const cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: { ideal: nextFacingMode },
-        },
+      // Make sure the camera is on first (asks for permission if needed).
+      const currentStream = localStreamRef.current ?? (await ensureMedia());
+      const currentTrack = currentStream.getVideoTracks()[0];
+      if (!currentTrack) {
+        setError("No camera track is available on this device.");
+        return;
+      }
+
+      // Prefer a real second camera (front/back) via deviceId.
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter((d) => d.kind === "videoinput");
+      const currentDeviceId = currentTrack.getSettings().deviceId;
+      const other = videoInputs.find((d) => d.deviceId && d.deviceId !== currentDeviceId);
+
+      const nextFacingMode = facingMode === "user" ? "environment" : "user";
+      const constraints: MediaStreamConstraints = {
+        video: other
+          ? { deviceId: { exact: other.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          : { facingMode: { exact: nextFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
-      });
+      };
+
+      let cameraStream: MediaStream;
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch {
+        // Fallback: some devices reject exact facingMode.
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: nextFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+      }
+
       const nextTrack = cameraStream.getVideoTracks()[0];
-      if (!nextTrack) {
+      if (!nextTrack || nextTrack.getSettings().deviceId === currentDeviceId) {
         cameraStream.getTracks().forEach((track) => track.stop());
+        setError("This device does not have another camera.");
         return;
       }
 
@@ -177,10 +195,11 @@ export function useRandomChat() {
       localStreamRef.current = currentStream;
       setLocalStream(new MediaStream(currentStream.getTracks()));
       setFacingMode(nextFacingMode);
+      setCamOn(nextTrack.enabled);
     } catch {
       setError("This device does not have another available camera.");
     }
-  }, [facingMode]);
+  }, [facingMode, ensureMedia]);
 
   /* ------------------------------------------------------------ peer teardown */
 
