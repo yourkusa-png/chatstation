@@ -393,17 +393,20 @@ function ChatPage() {
               >
                 {chat.camOn && permissionsGranted ? <Video className="size-5" /> : <VideoOff className="size-5" />}
               </Button>
+              <Button size="icon" className={overlayBtn} onClick={() => setFiltersOpen(true)} aria-label="Match filters">
+                <SlidersHorizontal className="size-5" />
+              </Button>
+            </div>
+
+            {/* right edge: camera rotate, above the messages */}
+            <div className="absolute bottom-24 right-3">
               <Button
                 size="icon"
                 className={overlayBtn}
                 onClick={() => void chat.switchCamera()}
-                disabled={!permissionsGranted}
                 aria-label="Switch camera"
               >
                 <SwitchCamera className="size-5" />
-              </Button>
-              <Button size="icon" className={overlayBtn} onClick={() => setFiltersOpen(true)} aria-label="Match filters">
-                <SlidersHorizontal className="size-5" />
               </Button>
             </div>
 
