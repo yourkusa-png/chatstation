@@ -147,7 +147,10 @@ export function useRandomChat() {
   const switchCamera = useCallback(async () => {
     const currentStream = localStreamRef.current;
     const currentTrack = currentStream?.getVideoTracks()[0];
-    if (!currentStream || !currentTrack) return;
+    if (!currentStream || !currentTrack) {
+      setError("Allow the camera first, then switch.");
+      return;
+    }
 
     const nextFacingMode = facingMode === "user" ? "environment" : "user";
     try {
