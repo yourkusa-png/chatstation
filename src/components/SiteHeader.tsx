@@ -4,7 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   CameraOff,
   Globe2,
-  Crown,
   LogOut,
   Menu,
   Radio,
@@ -95,9 +94,6 @@ export function SiteHeader({ onDisableDevices, matchCountry, onMatchCountryChang
         </Link>
 
         <nav className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
-          <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-            <Link to="/pricing">Pricing</Link>
-          </Button>
           {isStaff && (
             <Button asChild variant="ghost" size="sm">
               <Link to="/admin">
@@ -126,9 +122,6 @@ export function SiteHeader({ onDisableDevices, matchCountry, onMatchCountryChang
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild className="h-10 cursor-pointer">
                     <Link to="/profile"><UserRound /> Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="h-10 cursor-pointer">
-                    <Link to="/pricing"><Crown /> Upgrade subscription</Link>
                   </DropdownMenuItem>
                   {onMatchCountryChange && (
                     <DropdownMenuSub>
