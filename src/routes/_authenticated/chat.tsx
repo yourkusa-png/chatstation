@@ -119,7 +119,7 @@ function ChatPage() {
 
   const { data: gifResults, isFetching: gifsLoading } = useQuery({
     queryKey: ["chat-gifs", gifSearchTerm],
-    enabled: gifOpen && connected,
+    enabled: gifOpen && chat.status === "connected",
     queryFn: () => gifSearch({ data: { q: gifSearchTerm } }),
     staleTime: 60_000,
   });
