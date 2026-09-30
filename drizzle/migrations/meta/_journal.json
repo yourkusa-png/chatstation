@@ -15,6 +15,13 @@
       "when": 1790486897057,
       "tag": "0001_free_gender_country_filters",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790751583693,
+      "tag": "0002_add_gif_messages",
+      "breakpoints": true
     }
   ]
 }
