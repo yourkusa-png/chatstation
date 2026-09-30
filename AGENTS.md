@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep all signed-in account actions in `SiteHeader`'s account menu so destructive and subscription actions remain consistent across pages.
+- Store rich chat content with an explicit message kind and media URL so text and GIF rendering remains safe and extensible.
