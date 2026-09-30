@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   Mic,
@@ -10,7 +11,6 @@ import {
   SkipForward,
   Flag,
   Play,
-  Square,
   Send,
   Heart,
   SwitchCamera,
@@ -19,6 +19,9 @@ import {
   ShieldAlert,
   SlidersHorizontal,
   LogOut,
+  Smile,
+  ImageIcon,
+  Search,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -43,11 +46,13 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useRandomChat } from "@/hooks/useRandomChat";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, GENDERS, REPORT_REASONS, countryLabel, genderLabel } from "@/lib/constants";
+import { searchGifs } from "@/lib/gifs.functions";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({
@@ -64,6 +69,7 @@ export const Route = createFileRoute("/_authenticated/chat")({
 });
 
 const ANY = "__any__";
+const EMOJIS = ["😀", "😂", "😍", "🥰", "😎", "🤩", "😊", "😉", "🤗", "🤔", "😮", "😢", "❤️", "🔥", "👏", "👍", "👋", "🎉", "🌍", "✨"];
 
 function ChatPage() {
   const { user, profile, refreshProfile } = useAuth();
@@ -72,6 +78,8 @@ function ChatPage() {
   const localRef = useRef<HTMLVideoElement>(null);
   const remoteRef = useRef<HTMLVideoElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messageInputRef = useRef<HTMLInputElement>(null);
+  const gifSearch = useServerFn(searchGifs);
 
   const [interestText, setInterestText] = useState("");
   const [wantGender, setWantGender] = useState<string>(ANY);
@@ -83,6 +91,12 @@ function ChatPage() {
   const [confirming, setConfirming] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [likeBurst, setLikeBurst] = useState(0);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [gifOpen, setGifOpen] = useState(false);
+  const [gifQuery, setGifQuery] = useState("");
+  const [gifSearchTerm, setGifSearchTerm] = useState("");
+  const [sendingGif, setSendingGif] = useState<string | null>(null);
 
   const isPremium = profile?.is_premium ?? false;
 
@@ -101,6 +115,13 @@ function ChatPage() {
       if (row.expires_at && new Date(row.expires_at) < new Date()) return null;
       return row;
     },
+  });
+
+  const { data: gifResults, isFetching: gifsLoading } = useQuery({
+    queryKey: ["chat-gifs", gifSearchTerm],
+    enabled: gifOpen && connected,
+    queryFn: () => gifSearch({ data: { q: gifSearchTerm } }),
+    staleTime: 60_000,
   });
 
   useEffect(() => {
@@ -135,6 +156,36 @@ function ChatPage() {
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean)
     .slice(0, isPremium ? 12 : 1);
+  const filteredCountries = useMemo(() => {
+    const query = countrySearch.trim().toLowerCase();
+    return COUNTRIES.filter((country) => country.value !== "XX" && country.label.toLowerCase().includes(query));
+  }, [countrySearch]);
+
+  function insertEmoji(emoji: string) {
+    const input = messageInputRef.current;
+    const start = input?.selectionStart ?? draft.length;
+    const end = input?.selectionEnd ?? draft.length;
+    const next = `${draft.slice(0, start)}${emoji}${draft.slice(end)}`.slice(0, 500);
+    setDraft(next);
+    setEmojiOpen(false);
+    window.requestAnimationFrame(() => {
+      input?.focus();
+      const caret = Math.min(start + emoji.length, next.length);
+      input?.setSelectionRange(caret, caret);
+    });
+  }
+
+  async function sendGif(url: string) {
+    setSendingGif(url);
+    try {
+      await chat.sendGif(url);
+      setGifOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "GIF not sent");
+    } finally {
+      setSendingGif(null);
+    }
+  }
 
   async function confirmAge() {
     if (!user) return;
@@ -265,11 +316,7 @@ function ChatPage() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <SiteHeader
-        onDisableDevices={chat.disableDevices}
-        matchCountry={wantCountry}
-        onMatchCountryChange={setWantCountry}
-      />
+      <SiteHeader onDisableDevices={chat.disableDevices} />
       <main className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col sm:py-3">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface sm:rounded-3xl sm:border sm:border-border">
           {/* ---------------- stranger (top) ---------------- */}
@@ -371,8 +418,8 @@ function ChatPage() {
               </div>
             )}
 
-            {/* top-left: devices */}
-            <div className="absolute left-3 top-3 flex gap-2">
+            {/* top-left: stable camera controls */}
+            <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full border border-border/50 bg-background/45 p-1 backdrop-blur">
               <Button
                 size="icon"
                 className={chat.micOn && permissionsGranted ? overlayBtn : "size-11 rounded-full"}
@@ -393,20 +440,28 @@ function ChatPage() {
               >
                 {chat.camOn && permissionsGranted ? <Video className="size-5" /> : <VideoOff className="size-5" />}
               </Button>
-              <Button size="icon" className={overlayBtn} onClick={() => setFiltersOpen(true)} aria-label="Match filters">
-                <SlidersHorizontal className="size-5" />
-              </Button>
-            </div>
-
-            {/* right edge: camera rotate, above the messages */}
-            <div className="absolute bottom-24 right-3">
               <Button
                 size="icon"
                 className={overlayBtn}
                 onClick={() => void chat.switchCamera()}
-                aria-label="Switch camera"
+                disabled={chat.isSwitchingCamera}
+                aria-label="Switch front or rear camera"
               >
-                <SwitchCamera className="size-5" />
+                <SwitchCamera className={`size-5 ${chat.isSwitchingCamera ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+
+            <div className="absolute left-3 top-16 z-10">
+              <Button
+                size="sm"
+                className="h-9 rounded-full border border-border/50 bg-background/60 px-3 text-foreground backdrop-blur hover:bg-background/80"
+                onClick={() => setFiltersOpen(true)}
+                aria-label="Match filters"
+              >
+                <SlidersHorizontal className="size-4" />
+                <span className="max-w-28 truncate text-xs">
+                  {wantCountry === ANY ? "Filters" : countryLabel(wantCountry)}
+                </span>
               </Button>
             </div>
 
@@ -449,15 +504,24 @@ function ChatPage() {
                       {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}{" "}
                       <span className="font-semibold">{mine ? "You" : chat.partner?.display_name ?? "Stranger"}</span>
                     </span>
-                    <span
-                      className={
-                        mine
-                          ? "rounded-2xl bg-primary px-3 py-1.5 text-sm text-primary-foreground"
-                          : "rounded-2xl bg-background/70 px-3 py-1.5 text-sm backdrop-blur"
-                      }
-                    >
-                      {m.body}
-                    </span>
+                    {m.message_type === "gif" && m.media_url ? (
+                      <img
+                        src={m.media_url}
+                        alt="Shared GIF"
+                        loading="lazy"
+                        className="max-h-40 w-auto max-w-full rounded-lg border border-border/50 object-contain"
+                      />
+                    ) : (
+                      <span
+                        className={
+                          mine
+                            ? "rounded-2xl bg-primary px-3 py-1.5 text-sm text-primary-foreground"
+                            : "rounded-2xl bg-background/70 px-3 py-1.5 text-sm backdrop-blur"
+                        }
+                      >
+                        {m.body}
+                      </span>
+                    )}
                   </div>
                 );
               })}
@@ -469,8 +533,59 @@ function ChatPage() {
             </div>
 
             {/* input bar */}
-            <form onSubmit={handleSend} className="absolute inset-x-3 bottom-3 flex items-center gap-2">
+            <form onSubmit={handleSend} className="absolute inset-x-3 bottom-3 flex items-center gap-1.5">
+              <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+                <PopoverTrigger asChild>
+                  <Button type="button" size="icon" variant="outline" className="size-12 shrink-0 rounded-full bg-background/70 backdrop-blur" disabled={!connected} aria-label="Add emoji">
+                    <Smile className="size-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-64 p-2">
+                  <div className="grid grid-cols-5 gap-1" aria-label="Emoji picker">
+                    {EMOJIS.map((emoji) => (
+                      <Button key={emoji} type="button" variant="ghost" size="icon" className="text-xl" onClick={() => insertEmoji(emoji)}>
+                        {emoji}
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Popover open={gifOpen} onOpenChange={setGifOpen}>
+                <PopoverTrigger asChild>
+                  <Button type="button" size="icon" variant="outline" className="size-12 shrink-0 rounded-full bg-background/70 backdrop-blur" disabled={!connected} aria-label="Send a GIF">
+                    <ImageIcon className="size-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-[min(22rem,calc(100vw-1.5rem))] p-3">
+                  <form
+                    className="mb-3 flex gap-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      setGifSearchTerm(gifQuery.trim());
+                    }}
+                  >
+                    <Input value={gifQuery} onChange={(event) => setGifQuery(event.target.value)} placeholder="Search GIFs" maxLength={60} />
+                    <Button type="submit" size="icon" aria-label="Search GIFs"><Search className="size-4" /></Button>
+                  </form>
+                  <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto">
+                    {gifsLoading ? (
+                      <div className="col-span-2 flex h-32 items-center justify-center"><Loader2 className="size-5 animate-spin text-primary" /></div>
+                    ) : gifResults?.error ? (
+                      <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">{gifResults.error}</p>
+                    ) : gifResults?.gifs.length ? (
+                      gifResults.gifs.map((gif) => (
+                        <Button key={gif.id} type="button" variant="ghost" className="h-28 overflow-hidden p-0" disabled={sendingGif === gif.url} onClick={() => void sendGif(gif.url)} aria-label="Send this GIF">
+                          <img src={gif.url} alt="GIF result" loading="lazy" className="size-full object-cover" />
+                        </Button>
+                      ))
+                    ) : (
+                      <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">No GIFs found</p>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
               <Input
+                ref={messageInputRef}
                 value={draft}
                 onChange={(e) => {
                   setDraft(e.target.value);
@@ -479,7 +594,7 @@ function ChatPage() {
                 placeholder={connected ? "Say something…" : "Chat opens when connected"}
                 disabled={!connected}
                 maxLength={500}
-                className="h-12 flex-1 rounded-full border-border/50 bg-background/60 px-5 backdrop-blur"
+                className="h-12 min-w-0 flex-1 rounded-full border-border/50 bg-background/60 px-4 backdrop-blur"
               />
               <Button
                 type="submit"
@@ -500,7 +615,7 @@ function ChatPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Who do you want to meet?</DialogTitle>
-            <DialogDescription>Interests help match you with similar people.</DialogDescription>
+            <DialogDescription>Choose your preferences before finding the next person.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -538,16 +653,32 @@ function ChatPage() {
                 <Label className="flex items-center gap-1.5">
                   Country
                 </Label>
-                <Select value={wantCountry} onValueChange={setWantCountry}>
-                  <SelectTrigger><SelectValue placeholder="Anywhere" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ANY}>Anywhere</SelectItem>
-                    {COUNTRIES.filter((c) => c.value !== "XX").map((c) => (
-                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input value={countrySearch} onChange={(event) => setCountrySearch(event.target.value)} placeholder="Search countries" />
+                <div className="max-h-44 overflow-y-auto rounded-md border border-border p-1">
+                  <button
+                    type="button"
+                    className={`flex w-full items-center rounded-sm px-3 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${wantCountry === ANY ? "bg-primary text-primary-foreground" : ""}`}
+                    onClick={() => setWantCountry(ANY)}
+                  >
+                    Anywhere
+                  </button>
+                  {filteredCountries.map((country) => (
+                    <button
+                      key={country.value}
+                      type="button"
+                      className={`flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${wantCountry === country.value ? "bg-primary text-primary-foreground" : ""}`}
+                      onClick={() => setWantCountry(country.value)}
+                    >
+                      <span>{country.label}</span><span className="text-xs opacity-70">{country.value}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
+            </div>
+            <div className="flex flex-wrap gap-2 border-t border-border pt-4 text-xs text-muted-foreground">
+              <span>Gender: {wantGender === ANY ? "Anyone" : genderLabel(wantGender)}</span>
+              <span aria-hidden="true">·</span>
+              <span>Country: {wantCountry === ANY ? "Anywhere" : countryLabel(wantCountry)}</span>
             </div>
           </div>
           <DialogFooter>

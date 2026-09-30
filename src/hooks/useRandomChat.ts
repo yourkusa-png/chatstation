@@ -27,6 +27,8 @@ export type ChatMessage = {
   match_id: string;
   sender_id: string;
   body: string;
+  message_type: "text" | "gif";
+  media_url: string | null;
   created_at: string;
 };
 
@@ -68,6 +70,8 @@ export function useRandomChat() {
   const [camOn, setCamOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  const [isSwitchingCamera, setIsSwitchingCamera] = useState(false);
+  const [cameraCount, setCameraCount] = useState(0);
   const [camPermission, setCamPermission] = useState<PermissionState>("prompt");
   const [micPermission, setMicPermission] = useState<PermissionState>("prompt");
 
@@ -119,6 +123,8 @@ export function useRandomChat() {
     setMicOn(true);
     setCamPermission("granted");
     setMicPermission("granted");
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    setCameraCount(devices.filter((device) => device.kind === "videoinput").length);
     return stream;
   }, [facingMode]);
 
@@ -145,6 +151,9 @@ export function useRandomChat() {
   }, []);
 
   const switchCamera = useCallback(async () => {
+    if (isSwitchingCamera) return;
+    setIsSwitchingCamera(true);
+    setError(null);
     try {
       // Make sure the camera is on first (asks for permission if needed).
       const currentStream = localStreamRef.current ?? (await ensureMedia());
@@ -157,14 +166,24 @@ export function useRandomChat() {
       // Prefer a real second camera (front/back) via deviceId.
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoInputs = devices.filter((d) => d.kind === "videoinput");
+      setCameraCount(videoInputs.length);
       const currentDeviceId = currentTrack.getSettings().deviceId;
       const other = videoInputs.find((d) => d.deviceId && d.deviceId !== currentDeviceId);
 
       const nextFacingMode = facingMode === "user" ? "environment" : "user";
+      if (!other) {
+        try {
+          await currentTrack.applyConstraints({ facingMode: { exact: nextFacingMode } });
+          setFacingMode(nextFacingMode);
+          setLocalStream(new MediaStream(currentStream.getTracks()));
+          return;
+        } catch {
+          setError("This device does not have another camera.");
+          return;
+        }
+      }
       const constraints: MediaStreamConstraints = {
-        video: other
-          ? { deviceId: { exact: other.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-          : { facingMode: { exact: nextFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { deviceId: { exact: other.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       };
 
@@ -180,7 +199,7 @@ export function useRandomChat() {
       }
 
       const nextTrack = cameraStream.getVideoTracks()[0];
-      if (!nextTrack || nextTrack.getSettings().deviceId === currentDeviceId) {
+      if (!nextTrack) {
         cameraStream.getTracks().forEach((track) => track.stop());
         setError("This device does not have another camera.");
         return;
@@ -198,8 +217,10 @@ export function useRandomChat() {
       setCamOn(nextTrack.enabled);
     } catch {
       setError("This device does not have another available camera.");
+    } finally {
+      setIsSwitchingCamera(false);
     }
-  }, [facingMode, ensureMedia]);
+  }, [facingMode, ensureMedia, isSwitchingCamera]);
 
   /* ------------------------------------------------------------ peer teardown */
 
@@ -319,7 +340,28 @@ export function useRandomChat() {
       if (!match || !userId || !body.trim()) return;
       const { error: insertError } = await supabase
         .from("messages")
-        .insert({ match_id: match.id, sender_id: userId, body: body.trim().slice(0, 500) });
+        .insert({
+          match_id: match.id,
+          sender_id: userId,
+          body: body.trim().slice(0, 500),
+          message_type: "text",
+          media_url: null,
+        });
+      if (insertError) throw new Error(insertError.message);
+    },
+    [match, userId],
+  );
+
+  const sendGif = useCallback(
+    async (url: string) => {
+      if (!match || !userId || !url.startsWith("https://")) return;
+      const { error: insertError } = await supabase.from("messages").insert({
+        match_id: match.id,
+        sender_id: userId,
+        body: "GIF",
+        message_type: "gif",
+        media_url: url,
+      });
       if (insertError) throw new Error(insertError.message);
     },
     [match, userId],
@@ -576,6 +618,8 @@ export function useRandomChat() {
     camOn,
     micOn,
     facingMode,
+    isSwitchingCamera,
+    cameraCount,
     camPermission,
     micPermission,
     requestPermissions: ensureMedia,
@@ -584,6 +628,7 @@ export function useRandomChat() {
     stop,
     next,
     sendMessage,
+    sendGif,
     sendTyping,
     sendLike,
     toggleCam,

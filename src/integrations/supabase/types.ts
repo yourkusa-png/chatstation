@@ -95,6 +95,8 @@ export type Database = {
           created_at: string
           id: string
           match_id: string
+          media_url: string | null
+          message_type: string
           sender_id: string
         }
         Insert: {
@@ -102,6 +104,8 @@ export type Database = {
           created_at?: string
           id?: string
           match_id: string
+          media_url?: string | null
+          message_type?: string
           sender_id: string
         }
         Update: {
@@ -109,6 +113,8 @@ export type Database = {
           created_at?: string
           id?: string
           match_id?: string
+          media_url?: string | null
+          message_type?: string
           sender_id?: string
         }
         Relationships: [
