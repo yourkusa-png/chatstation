@@ -5,12 +5,14 @@ import {
   CameraOff,
   LogOut,
   Menu,
-  Radio,
   Shield,
+  SlidersHorizontal,
   Trash2,
   UserRound,
 } from "lucide-react";
 import { useState } from "react";
+
+import logoMark from "@/assets/logo-mark.png";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,9 +40,10 @@ import { toast } from "sonner";
 
 type SiteHeaderProps = {
   onDisableDevices?: () => Promise<void> | void;
+  onOpenFilters?: () => void;
 };
 
-export function SiteHeader({ onDisableDevices }: SiteHeaderProps) {
+export function SiteHeader({ onDisableDevices, onOpenFilters }: SiteHeaderProps) {
   const { user, profile, isStaff, loading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -78,9 +81,7 @@ export function SiteHeader({ onDisableDevices }: SiteHeaderProps) {
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4">
         <Link to="/" className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Radio className="size-4" />
-          </span>
+          <img src={logoMark} alt="" className="h-8 w-auto" />
           <span className="font-display text-base font-bold sm:text-lg">CHAT STATION</span>
         </Link>
 
@@ -114,6 +115,15 @@ export function SiteHeader({ onDisableDevices }: SiteHeaderProps) {
                   <DropdownMenuItem asChild className="h-10 cursor-pointer">
                     <Link to="/profile"><UserRound /> Profile</Link>
                   </DropdownMenuItem>
+                  {onOpenFilters ? (
+                    <DropdownMenuItem className="h-10 cursor-pointer" onSelect={() => onOpenFilters()}>
+                      <SlidersHorizontal /> Filters (country, gender)
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem asChild className="h-10 cursor-pointer">
+                      <Link to="/chat"><SlidersHorizontal /> Filters (country, gender)</Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     className="h-10 cursor-pointer"
                     onSelect={() => void handleDisableDevices()}
