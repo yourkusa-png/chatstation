@@ -175,7 +175,7 @@ export function useRandomChat() {
       const idx = videoInputs.findIndex((d) => d.deviceId === currentDeviceId);
       if (videoInputs.length > 1) {
         const other = videoInputs[(idx + 1) % videoInputs.length];
-        attempts.push({ ...size, deviceId: { exact: other.deviceId } });
+        if (other) attempts.push({ ...size, deviceId: { exact: other.deviceId } });
       }
       attempts.push({ ...size, facingMode: { ideal: nextFacingMode } });
 
@@ -200,11 +200,12 @@ export function useRandomChat() {
           video: currentDeviceId ? { ...size, deviceId: { exact: currentDeviceId } } : size,
           audio: false,
         });
-        nextTrack = s.getVideoTracks()[0];
+        nextTrack = s.getVideoTracks()[0] ?? null;
         setError("This device does not have another camera.");
       } else {
         setFacingMode(nextFacingMode);
       }
+      if (!nextTrack) throw new Error("no camera");
 
       nextTrack.enabled = wasEnabled;
       const sender = pcRef.current?.getSenders().find((s) => s.track?.kind === "video" || (!s.track && s.dtmf === null));
