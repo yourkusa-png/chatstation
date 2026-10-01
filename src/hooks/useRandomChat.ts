@@ -155,68 +155,67 @@ export function useRandomChat() {
     setIsSwitchingCamera(true);
     setError(null);
     try {
-      // Make sure the camera is on first (asks for permission if needed).
       const currentStream = localStreamRef.current ?? (await ensureMedia());
       const currentTrack = currentStream.getVideoTracks()[0];
-      if (!currentTrack) {
-        setError("No camera track is available on this device.");
-        return;
-      }
-
-      // Prefer a real second camera (front/back) via deviceId.
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoInputs = devices.filter((d) => d.kind === "videoinput");
-      setCameraCount(videoInputs.length);
-      const currentDeviceId = currentTrack.getSettings().deviceId;
-      const other = videoInputs.find((d) => d.deviceId && d.deviceId !== currentDeviceId);
-
+      const wasEnabled = currentTrack?.enabled ?? true;
+      const currentDeviceId = currentTrack?.getSettings().deviceId;
       const nextFacingMode = facingMode === "user" ? "environment" : "user";
-      if (!other) {
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter((d) => d.kind === "videoinput" && d.deviceId);
+      setCameraCount(videoInputs.length);
+
+      // Phones usually can't open two cameras at once: release the current one first.
+      currentTrack?.stop();
+
+      const size = { width: { ideal: 1280 }, height: { ideal: 720 } };
+      const attempts: MediaTrackConstraints[] = [
+        { ...size, facingMode: { exact: nextFacingMode } },
+      ];
+      const idx = videoInputs.findIndex((d) => d.deviceId === currentDeviceId);
+      if (videoInputs.length > 1) {
+        const other = videoInputs[(idx + 1) % videoInputs.length];
+        attempts.push({ ...size, deviceId: { exact: other.deviceId } });
+      }
+      attempts.push({ ...size, facingMode: { ideal: nextFacingMode } });
+
+      let nextTrack: MediaStreamTrack | null = null;
+      for (const video of attempts) {
         try {
-          await currentTrack.applyConstraints({ facingMode: { exact: nextFacingMode } });
-          setFacingMode(nextFacingMode);
-          setLocalStream(new MediaStream(currentStream.getTracks()));
-          return;
+          const s = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+          const t = s.getVideoTracks()[0];
+          if (t && (t.getSettings().deviceId !== currentDeviceId || videoInputs.length <= 1)) {
+            nextTrack = t;
+            break;
+          }
+          s.getTracks().forEach((x) => x.stop());
         } catch {
-          setError("This device does not have another camera.");
-          return;
+          /* try next */
         }
       }
-      const constraints: MediaStreamConstraints = {
-        video: { deviceId: { exact: other.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      };
 
-      let cameraStream: MediaStream;
-      try {
-        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch {
-        // Fallback: some devices reject exact facingMode.
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: nextFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      if (!nextTrack) {
+        // Restore the original camera.
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: currentDeviceId ? { ...size, deviceId: { exact: currentDeviceId } } : size,
           audio: false,
         });
-      }
-
-      const nextTrack = cameraStream.getVideoTracks()[0];
-      if (!nextTrack) {
-        cameraStream.getTracks().forEach((track) => track.stop());
+        nextTrack = s.getVideoTracks()[0];
         setError("This device does not have another camera.");
-        return;
+      } else {
+        setFacingMode(nextFacingMode);
       }
 
-      nextTrack.enabled = currentTrack.enabled;
-      const sender = pcRef.current?.getSenders().find((item) => item.track?.kind === "video");
+      nextTrack.enabled = wasEnabled;
+      const sender = pcRef.current?.getSenders().find((s) => s.track?.kind === "video" || (!s.track && s.dtmf === null));
       if (sender) await sender.replaceTrack(nextTrack);
-      currentStream.removeTrack(currentTrack);
+      if (currentTrack) currentStream.removeTrack(currentTrack);
       currentStream.addTrack(nextTrack);
-      currentTrack.stop();
       localStreamRef.current = currentStream;
       setLocalStream(new MediaStream(currentStream.getTracks()));
-      setFacingMode(nextFacingMode);
-      setCamOn(nextTrack.enabled);
+      setCamOn(wasEnabled);
     } catch {
-      setError("This device does not have another available camera.");
+      setError("Could not switch the camera. Check camera permission.");
     } finally {
       setIsSwitchingCamera(false);
     }
