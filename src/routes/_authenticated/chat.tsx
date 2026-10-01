@@ -316,7 +316,7 @@ function ChatPage() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <SiteHeader onDisableDevices={chat.disableDevices} />
+      <SiteHeader onDisableDevices={chat.disableDevices} onOpenFilters={() => setFiltersOpen(true)} />
       <main className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col sm:py-3">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface sm:rounded-3xl sm:border sm:border-border">
           {/* ---------------- stranger (top) ---------------- */}
@@ -451,19 +451,6 @@ function ChatPage() {
               </Button>
             </div>
 
-            <div className="absolute left-3 top-16 z-10">
-              <Button
-                size="sm"
-                className="h-9 rounded-full border border-border/50 bg-background/60 px-3 text-foreground backdrop-blur hover:bg-background/80"
-                onClick={() => setFiltersOpen(true)}
-                aria-label="Match filters"
-              >
-                <SlidersHorizontal className="size-4" />
-                <span className="max-w-28 truncate text-xs">
-                  {wantCountry === ANY ? "Filters" : countryLabel(wantCountry)}
-                </span>
-              </Button>
-            </div>
 
             {/* top-right: start / exit */}
             <div className="absolute right-3 top-3">
