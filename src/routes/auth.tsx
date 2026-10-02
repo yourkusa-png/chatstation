@@ -70,15 +70,31 @@ function AuthPage() {
   }
 
   async function handleGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error("Google sign-in failed. Please try again.");
+    // Lovable-hosted URLs use the managed OAuth broker; other origins
+    // (e.g. a self-hosted custom domain) go through direct backend OAuth.
+    const isLovableHost = /(^|\.)lovable\.app$/.test(window.location.hostname);
+    if (isLovableHost) {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error("Google sign-in failed. Please try again.");
+        return;
+      }
+      if (result.redirected) return;
+      navigate({ to: "/chat" });
       return;
     }
-    if (result.redirected) return;
-    navigate({ to: "/chat" });
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/chat`,
+      },
+    });
+    if (error) {
+      toast.error("Google sign-in failed. Please try again.");
+    }
   }
 
   if (checkEmail) {
