@@ -8,19 +8,42 @@ import { useAuth } from "@/hooks/useAuth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CHAT STATION — random video chat with strangers" },
+      { title: "CHAT STATION — Free Random Video Chat | Omegle & OmeTV Alternative" },
       {
         name: "description",
         content:
-          "Press start and get paired with a random stranger for a live video call. Text chat, interest matching and skip whenever you like.",
+          "Talk to random strangers instantly on free 1-on-1 live video calls. No download needed. Country & gender filters, text chat, GIFs. Start on CHAT STATION now.",
       },
-      { property: "og:title", content: "CHAT STATION — random video chat with strangers" },
+      {
+        name: "keywords",
+        content:
+          "random video chat, omegle alternative, ometv alternative, talk to strangers, random video call india, free video chat, stranger cam chat, chat station",
+      },
+      { property: "og:title", content: "CHAT STATION — Free Random Video Chat with Strangers" },
       {
         property: "og:description",
-        content: "Press start and meet someone new on camera. Skip anytime.",
+        content: "Meet new people worldwide on live 1-on-1 video calls. Free, instant, skip anytime.",
       },
+      { property: "og:url", content: "https://chatstation.in/" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+    ],
+    links: [{ rel: "canonical", href: "https://chatstation.in/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: "CHAT STATION",
+          url: "https://chatstation.in/",
+          applicationCategory: "CommunicationApplication",
+          operatingSystem: "Web, Android, iOS",
+          description:
+            "Free random video chat with strangers. A modern Omegle and OmeTV alternative.",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
+        }),
+      },
     ],
   }),
   component: Landing,
