@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Radio } from "lucide-react";
+import { Loader2, Radio, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,9 +12,9 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in · CHAT STATION" },
-      { name: "description", content: "Create a CHAT STATION account to start random video chats." },
+      { name: "description", content: "Sign in with Google to start random video chats on CHAT STATION." },
       { property: "og:title", content: "Sign in · CHAT STATION" },
-      { property: "og:description", content: "Create an account to start random video chats." },
+      { property: "og:description", content: "One tap with Google to start random video chats." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -24,178 +22,86 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+function GoogleLogo() {
+  return (
+    <svg viewBox="0 0 48 48" className="size-6" aria-hidden="true">
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
+      <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+    </svg>
+  );
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [checkEmail, setCheckEmail] = useState(false);
 
   useEffect(() => {
     if (!loading && user) navigate({ to: "/chat", replace: true });
   }, [loading, user, navigate]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleGoogle() {
     setBusy(true);
     try {
-      if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/chat`,
-            data: { display_name: displayName || email.split("@")[0] },
-          },
+      // Lovable-hosted URLs use the managed OAuth broker; other origins
+      // (e.g. a self-hosted custom domain) go through direct backend OAuth.
+      const isLovableHost = /(^|\.)lovable\.app$/.test(window.location.hostname);
+      if (isLovableHost) {
+        const result = await lovable.auth.signInWithOAuth("google", {
+          redirect_uri: window.location.origin,
         });
-        if (error) throw error;
-        if (!data.session) {
-          setCheckEmail(true);
+        if (result.error) {
+          toast.error("Google sign-in failed. Please try again.");
           return;
         }
+        if (result.redirected) return;
         navigate({ to: "/chat" });
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        navigate({ to: "/chat" });
+        return;
       }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Something went wrong");
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/chat` },
+      });
+      if (error) toast.error("Google sign-in failed. Please try again.");
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleGoogle() {
-    // Lovable-hosted URLs use the managed OAuth broker; other origins
-    // (e.g. a self-hosted custom domain) go through direct backend OAuth.
-    const isLovableHost = /(^|\.)lovable\.app$/.test(window.location.hostname);
-    if (isLovableHost) {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) {
-        toast.error("Google sign-in failed. Please try again.");
-        return;
-      }
-      if (result.redirected) return;
-      navigate({ to: "/chat" });
-      return;
-    }
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/chat`,
-      },
-    });
-    if (error) {
-      toast.error("Google sign-in failed. Please try again.");
-    }
-  }
-
-  if (checkEmail) {
-    return (
-      <Shell>
-        <h1 className="text-2xl font-bold">Check your email</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          We sent a confirmation link to <span className="text-foreground">{email}</span>. Click it
-          to activate your account, then come back and sign in.
-        </p>
-        <Button className="mt-6 w-full" variant="outline" onClick={() => setCheckEmail(false)}>
-          Back to sign in
-        </Button>
-      </Shell>
-    );
-  }
-
-  return (
-    <Shell>
-      <h1 className="text-2xl font-bold">
-        {mode === "signin" ? "Welcome back" : "Create your account"}
-      </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        You need an account so we can keep the room safe.
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        {mode === "signup" && (
-          <div className="space-y-2">
-            <Label htmlFor="name">Display name</Label>
-            <Input
-              id="name"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="What strangers will see"
-              maxLength={24}
-            />
-          </div>
-        )}
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 6 characters"
-          />
-        </div>
-        <Button type="submit" className="w-full" disabled={busy}>
-          {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
-        </Button>
-      </form>
-
-      <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
-        <span className="h-px flex-1 bg-border" />
-        or
-        <span className="h-px flex-1 bg-border" />
-      </div>
-
-      <Button variant="outline" className="w-full" onClick={handleGoogle}>
-        Continue with Google
-      </Button>
-
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        {mode === "signin" ? "New here?" : "Already have an account?"}{" "}
-        <button
-          type="button"
-          className="font-medium text-primary hover:underline"
-          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-        >
-          {mode === "signin" ? "Create an account" : "Sign in"}
-        </button>
-      </p>
-    </Shell>
-  );
-}
-
-function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="grain flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <Link to="/" className="mb-8 flex items-center gap-2">
-        <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-          <Radio className="size-4" />
+        <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Radio className="size-5" />
         </span>
-        <span className="font-display text-lg font-bold">CHAT STATION</span>
+        <span className="font-display text-xl font-bold">CHAT STATION</span>
       </Link>
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-7">{children}</div>
+
+      <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-8 text-center shadow-lg">
+        <h1 className="font-display text-2xl font-bold">Welcome to CHAT STATION</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Meet new people instantly. One tap and you're in.
+        </p>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleGoogle}
+          disabled={busy}
+          className="mt-8 h-14 w-full gap-3 rounded-full border-2 text-base font-semibold transition-transform hover:scale-[1.02] active:scale-[0.98]"
+        >
+          {busy ? <Loader2 className="size-5 animate-spin" /> : <GoogleLogo />}
+          Continue with Google
+        </Button>
+
+        <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+          <ShieldCheck className="size-4 text-primary" />
+          18+ only · Be respectful · Stay safe
+        </p>
+      </div>
     </div>
   );
 }

@@ -496,7 +496,7 @@ function ChatPage() {
                         src={m.media_url}
                         alt="Shared GIF"
                         loading="lazy"
-                        className="max-h-40 w-auto max-w-full rounded-lg border border-border/50 object-contain"
+                        className="max-h-20 w-auto max-w-[8rem] rounded-xl border border-border/40 object-contain shadow-md"
                       />
                     ) : (
                       <span
@@ -554,19 +554,19 @@ function ChatPage() {
                     <Input value={gifQuery} onChange={(event) => setGifQuery(event.target.value)} placeholder="Search GIFs" maxLength={60} />
                     <Button type="submit" size="icon" aria-label="Search GIFs"><Search className="size-4" /></Button>
                   </form>
-                  <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto">
+                  <div className="grid max-h-52 grid-cols-3 gap-1.5 overflow-y-auto">
                     {gifsLoading ? (
-                      <div className="col-span-2 flex h-32 items-center justify-center"><Loader2 className="size-5 animate-spin text-primary" /></div>
+                      <div className="col-span-3 flex h-32 items-center justify-center"><Loader2 className="size-5 animate-spin text-primary" /></div>
                     ) : gifResults?.error ? (
-                      <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">{gifResults.error}</p>
+                      <p className="col-span-3 py-8 text-center text-sm text-muted-foreground">{gifResults.error}</p>
                     ) : gifResults?.gifs.length ? (
                       gifResults.gifs.map((gif) => (
-                        <Button key={gif.id} type="button" variant="ghost" className="h-28 overflow-hidden p-0" disabled={sendingGif === gif.url} onClick={() => void sendGif(gif.url)} aria-label="Send this GIF">
+                        <Button key={gif.id} type="button" variant="ghost" className="h-20 overflow-hidden rounded-lg p-0" disabled={sendingGif === gif.url} onClick={() => void sendGif(gif.url)} aria-label="Send this GIF">
                           <img src={gif.url} alt="GIF result" loading="lazy" className="size-full object-cover" />
                         </Button>
                       ))
                     ) : (
-                      <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">No GIFs found</p>
+                      <p className="col-span-3 py-8 text-center text-sm text-muted-foreground">No GIFs found</p>
                     )}
                   </div>
                 </PopoverContent>
