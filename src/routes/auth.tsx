@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Loader2, Radio, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 
+import lovableMark from "@/assets/lovable-mark.png";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -74,9 +75,7 @@ function AuthPage() {
   return (
     <div className="grain flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <Link to="/" className="mb-8 flex items-center gap-2">
-        <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Radio className="size-5" />
-        </span>
+        <img src={lovableMark} alt="" className="size-9 object-contain" />
         <span className="font-display text-xl font-bold">CHAT STATION</span>
       </Link>
 
