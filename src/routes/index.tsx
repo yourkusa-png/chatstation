@@ -9,6 +9,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useAuth } from "@/hooks/useAuth";
+import { SEO_TOPICS } from "@/data/seo-topics";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -237,6 +238,13 @@ function Landing() {
       </main>
 
       <footer className="border-t border-border">
+        <nav className="mx-auto flex w-full max-w-6xl flex-wrap gap-2 px-4 pt-8 text-xs">
+          {SEO_TOPICS.map((s) => (
+            <Link key={s.slug} to="/topics/$slug" params={{ slug: s.slug }} className="capitalize text-muted-foreground hover:text-foreground">
+              {s.keyword} ·
+            </Link>
+          ))}
+        </nav>
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-4 px-4 py-8 text-sm text-muted-foreground">
           <span>© {new Date().getFullYear()} CHAT STATION</span>
           <Link to="/pricing" className="ml-auto hover:text-foreground">
