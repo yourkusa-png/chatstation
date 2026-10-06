@@ -1,5 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Radio, Shield, SkipForward, MessageSquare, Globe, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { Radio, Shield, SkipForward, MessageSquare, Globe, Sparkles, Loader2 } from "lucide-react";
+
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -84,6 +89,34 @@ const FEATURES = [
 
 function Landing() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+
+  async function startWithGoogle() {
+    setBusy(true);
+    try {
+      const isLovableHost = /(^|\.)lovable\.app$/.test(window.location.hostname);
+      if (isLovableHost) {
+        const result = await lovable.auth.signInWithOAuth("google", {
+          redirect_uri: `${window.location.origin}/chat`,
+        });
+        if (result.error) {
+          toast.error("Google sign-in failed. Please try again.");
+          return;
+        }
+        if (result.redirected) return;
+        navigate({ to: "/chat" });
+        return;
+      }
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/chat` },
+      });
+      if (error) toast.error("Google sign-in failed. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -105,13 +138,31 @@ function Landing() {
                 CHAT STATION drops you straight into a one-to-one video call with somebody else who
                 pressed start. Say hi, have a chat, or skip to the next face.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button asChild size="lg" className="glow-ring">
-                  <Link to={user ? "/chat" : "/auth"}>Start chatting</Link>
-                </Button>
-                <Button asChild size="lg" variant="outline">
-                  <Link to="/pricing">See plans</Link>
-                </Button>
+              <div className="mt-8">
+                {user ? (
+                  <Button asChild className="glow-ring h-16 w-full rounded-2xl text-lg font-bold sm:w-auto sm:px-10">
+                    <Link to="/chat">
+                      <span className="size-2.5 animate-pulse rounded-full bg-primary-foreground" />
+                      Start Live Video Call
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={startWithGoogle}
+                    disabled={busy}
+                    className="glow-ring h-16 w-full rounded-2xl text-lg font-bold sm:w-auto sm:px-10"
+                  >
+                    {busy ? (
+                      <Loader2 className="size-5 animate-spin" />
+                    ) : (
+                      <span className="size-2.5 animate-pulse rounded-full bg-primary-foreground" />
+                    )}
+                    Start Live Video Call
+                  </Button>
+                )}
+                {!user && (
+                  <p className="mt-3 text-sm text-muted-foreground">One tap with Google · Free</p>
+                )}
               </div>
               <p className="mt-6 text-xs text-muted-foreground">
                 18+ only. Be kind — calls can be reported and accounts can be banned.

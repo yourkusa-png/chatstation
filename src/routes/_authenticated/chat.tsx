@@ -235,6 +235,21 @@ function ChatPage() {
     }
   }
 
+  // Auto-start matching as soon as the user lands here (1-tap flow).
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (autoStarted.current || ban || !profile?.age_confirmed || chat.status !== "idle") return;
+    autoStarted.current = true;
+    Promise.resolve(
+      chat.start({
+        interests,
+        wantGender: wantGender !== ANY ? wantGender : null,
+        wantCountry: wantCountry !== ANY ? wantCountry : null,
+      }),
+    ).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ban, profile?.age_confirmed, chat.status]);
+
   if (ban) {
     return (
       <div className="min-h-screen">
