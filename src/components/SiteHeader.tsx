@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-import lovableMark from "@/assets/lovable-mark.png";
+import lovableMark from "@/assets/chatstation-logo.png";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -81,7 +81,7 @@ export function SiteHeader({ onDisableDevices, onOpenFilters }: SiteHeaderProps)
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4">
         <Link to="/" className="flex items-center gap-2">
-          <img src={lovableMark} alt="" className="size-8 object-contain" />
+          <img src={lovableMark} alt="" className="size-8 rounded-lg object-contain" />
           <span className="font-display text-base font-bold sm:text-lg">CHAT STATION</span>
         </Link>
 
