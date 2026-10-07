@@ -48,11 +48,25 @@ export type Preferences = {
 
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
     { urls: "stun:global.stun.twilio.com:3478" },
+    // Free public relay fallback for mobile networks that block direct P2P.
+    {
+      urls: [
+        "turn:openrelay.metered.ca:80",
+        "turn:openrelay.metered.ca:443",
+        "turn:openrelay.metered.ca:443?transport=tcp",
+      ],
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
   ],
+  iceCandidatePoolSize: 2,
+  bundlePolicy: "max-bundle",
 };
+
+const VIDEO_SIZE = { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } };
+const MAX_VIDEO_BITRATE = 600_000;
 
 export function useRandomChat() {
   const { user } = useAuth();
@@ -114,7 +128,7 @@ export function useRandomChat() {
   const ensureMedia = useCallback(async () => {
     if (localStreamRef.current) return localStreamRef.current;
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: { ideal: facingMode } },
+      video: { ...VIDEO_SIZE, facingMode: { ideal: facingMode } },
       audio: { echoCancellation: true, noiseSuppression: true },
     });
     localStreamRef.current = stream;
@@ -168,7 +182,7 @@ export function useRandomChat() {
       // Phones usually can't open two cameras at once: release the current one first.
       currentTrack?.stop();
 
-      const size = { width: { ideal: 1280 }, height: { ideal: 720 } };
+      const size = VIDEO_SIZE;
       const attempts: MediaTrackConstraints[] = [
         { ...size, facingMode: { exact: nextFacingMode } },
       ];
@@ -448,7 +462,18 @@ export function useRandomChat() {
     setRemoteStream(remote);
 
     localStreamRef.current?.getTracks().forEach((track) => {
-      pc.addTrack(track, localStreamRef.current as MediaStream);
+      const sender = pc.addTrack(track, localStreamRef.current as MediaStream);
+      if (track.kind === "video") {
+        try {
+          const params = sender.getParameters();
+          if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+          params.encodings[0].maxBitrate = MAX_VIDEO_BITRATE;
+          params.encodings[0].maxFramerate = 24;
+          void sender.setParameters(params).catch(() => {});
+        } catch {
+          /* bitrate cap unsupported */
+        }
+      }
     });
 
     pc.ontrack = (event) => {
