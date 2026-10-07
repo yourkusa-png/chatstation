@@ -467,8 +467,9 @@ export function useRandomChat() {
         try {
           const params = sender.getParameters();
           if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
-          params.encodings[0].maxBitrate = MAX_VIDEO_BITRATE;
-          params.encodings[0].maxFramerate = 24;
+          const enc = params.encodings[0]!;
+          enc.maxBitrate = MAX_VIDEO_BITRATE;
+          enc.maxFramerate = 24;
           void sender.setParameters(params).catch(() => {});
         } catch {
           /* bitrate cap unsupported */
