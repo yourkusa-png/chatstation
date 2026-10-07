@@ -14,16 +14,16 @@ import { SEO_TOPICS } from "@/data/seo-topics";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CHAT STATION — Free Random Video Chat | Omegle & OmeTV Alternative" },
+      { title: "CHAT STATION — Start Live Video Chat with Strangers Free | Omegle & OmeTV Alternative" },
       {
         name: "description",
         content:
-          "Talk to random strangers instantly on free 1-on-1 live video calls. No download needed. Country & gender filters, text chat, GIFs. Start on CHAT STATION now.",
+          "Talk to random strangers instantly on free 1-on-1 live video chat. No download needed. Country & gender filters, text chat, GIFs. Start on CHAT STATION now.",
       },
       {
         name: "keywords",
         content:
-          "random video chat, omegle alternative, ometv alternative, talk to strangers, random video call india, free video chat, stranger cam chat, chat station",
+          "live video chat, random video chat, omegle alternative, ometv alternative, talk to strangers, random video call india, free video chat, stranger cam chat, chat station",
       },
       { property: "og:title", content: "CHAT STATION — Free Random Video Chat with Strangers" },
       {
@@ -144,7 +144,7 @@ function Landing() {
                   <Button asChild className="glow-ring h-16 w-full rounded-2xl text-lg font-bold sm:w-auto sm:px-10">
                     <Link to="/chat">
                       <span className="size-2.5 animate-pulse rounded-full bg-primary-foreground" />
-                      Start Live Video Call
+                      Start Live Video Chat
                     </Link>
                   </Button>
                 ) : (
@@ -158,7 +158,7 @@ function Landing() {
                     ) : (
                       <span className="size-2.5 animate-pulse rounded-full bg-primary-foreground" />
                     )}
-                    Start Live Video Call
+                    Start Live Video Chat
                   </Button>
                 )}
                 {!user && (
