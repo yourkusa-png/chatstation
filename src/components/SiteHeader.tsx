@@ -13,6 +13,18 @@ import {
 import { useState } from "react";
 
 import lovableMark from "@/assets/chatstation-logo.png";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
+
+function OnlineBadge() {
+  const n = useOnlineCount();
+  if (n < 1) return null;
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+      <span className="size-2 animate-pulse rounded-full bg-primary" />
+      {n} Online
+    </span>
+  );
+}
 
 import { Button } from "@/components/ui/button";
 import {
@@ -86,6 +98,7 @@ export function SiteHeader({ onDisableDevices, onOpenFilters }: SiteHeaderProps)
         </Link>
 
         <nav className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
+          <OnlineBadge />
           {isStaff && (
             <Button asChild variant="ghost" size="sm">
               <Link to="/admin">
