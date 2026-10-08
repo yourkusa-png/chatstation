@@ -420,7 +420,7 @@ export function useRandomChat() {
           /* ignore transient */
         }
       }
-    }, 2500);
+    }, 1500);
 
     return () => {
       clearInterval(poll);
