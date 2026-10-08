@@ -420,7 +420,7 @@ export function useRandomChat() {
           /* ignore transient */
         }
       }
-    }, 2500);
+    }, 1500);
 
     return () => {
       clearInterval(poll);
@@ -562,12 +562,23 @@ export function useRandomChat() {
         if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
         typingTimerRef.current = setTimeout(() => setPartnerTyping(false), 2200);
       })
+      // Instant handshake: both sides say "hello" as soon as they join the
+      // channel; the initiator sends the offer the moment it hears the partner.
+      .on("broadcast", { event: "hello" }, ({ payload }) => {
+        if (isInitiator) void makeOffer();
+        else if (!(payload as { reply?: boolean })?.reply) {
+          void signal.send({ type: "broadcast", event: "hello", payload: { reply: true } });
+        }
+      })
       .on("presence", { event: "sync" }, () => {
         const online = Object.keys(signal.presenceState());
         if (isInitiator && online.length >= 2) void makeOffer();
       })
-      .subscribe(async (state) => {
-        if (state === "SUBSCRIBED") await signal.track({ at: Date.now() });
+      .subscribe((state) => {
+        if (state === "SUBSCRIBED") {
+          void signal.send({ type: "broadcast", event: "hello", payload: {} });
+          void signal.track({ at: Date.now() });
+        }
       });
 
     const messageChannel = supabase
