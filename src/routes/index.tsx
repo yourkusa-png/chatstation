@@ -172,30 +172,40 @@ function Landing() {
               </p>
             </div>
 
-            <div className="relative">
-              <div className="glow-ring aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-surface">
-                <div className="flex h-full flex-col">
-                  <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-                    <span className="size-2 rounded-full bg-destructive" />
-                    <span className="size-2 rounded-full bg-accent" />
-                    <span className="size-2 rounded-full bg-primary" />
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      chat station · connected
-                    </span>
-                  </div>
-                  <div className="relative flex-1 bg-[radial-gradient(circle_at_50%_40%,oklch(0.3_0.02_265),oklch(0.18_0.012_265))]">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="mx-auto flex size-20 items-center justify-center rounded-full border border-primary/40 bg-primary/10">
-                          <Radio className="size-8 text-primary" />
-                        </div>
-                        <p className="mt-4 text-sm text-muted-foreground">
-                          Stranger from anywhere
-                        </p>
-                      </div>
+            <div className="hero-float relative mx-auto w-full max-w-sm lg:max-w-none">
+              <div className="glow-ring relative aspect-[3/4] overflow-hidden rounded-[2rem] border border-primary/30 bg-surface sm:aspect-[4/3]">
+                {/* stranger video */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-surface to-accent/30" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative">
+                    <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
+                    <div className="relative flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-3xl font-bold text-primary-foreground">
+                      ✦
                     </div>
-                    <div className="absolute bottom-4 right-4 h-24 w-32 rounded-lg border border-border bg-background/80" />
                   </div>
+                </div>
+                {/* top bar */}
+                <div className="absolute inset-x-3 top-3 flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 px-3 py-1 text-xs font-semibold backdrop-blur-md">
+                    <span className="size-2 animate-pulse rounded-full bg-destructive" /> LIVE
+                  </span>
+                  <span className="rounded-full bg-background/60 px-3 py-1 text-xs backdrop-blur-md">🌍 Stranger · 00:42</span>
+                </div>
+                {/* floating reactions */}
+                <span className="hero-rise absolute right-6 top-1/3 text-2xl [animation-delay:0.4s]">❤️</span>
+                <span className="hero-rise absolute right-12 top-1/2 text-xl [animation-delay:0.9s]">😂</span>
+                <span className="hero-rise absolute left-6 top-1/2 text-xl [animation-delay:1.3s]">👋</span>
+                {/* chat bubble */}
+                <div className="absolute bottom-20 left-3 max-w-[70%] rounded-2xl rounded-bl-sm bg-background/70 px-3 py-2 text-sm backdrop-blur-md">
+                  Hi! Where are you from? 😊
+                </div>
+                {/* self view */}
+                <div className="absolute bottom-20 right-3 h-24 w-20 overflow-hidden rounded-xl border-2 border-primary/60 bg-gradient-to-br from-accent/40 to-primary/40 shadow-lg" />
+                {/* controls */}
+                <div className="absolute inset-x-0 bottom-3 flex justify-center gap-3">
+                  <span className="flex size-11 items-center justify-center rounded-full bg-background/70 backdrop-blur-md"><MessageSquare className="size-5" /></span>
+                  <span className="flex h-11 items-center gap-2 rounded-full bg-gradient-to-r from-primary to-accent px-5 text-sm font-bold text-primary-foreground"><SkipForward className="size-4" /> Next</span>
+                  <span className="flex size-11 items-center justify-center rounded-full bg-background/70 backdrop-blur-md"><Radio className="size-5 text-primary" /></span>
                 </div>
               </div>
             </div>
