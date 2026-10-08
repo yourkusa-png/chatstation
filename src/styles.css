@@ -165,3 +165,11 @@
 @media (prefers-reduced-motion: reduce) {
   .like-pop { animation: none; }
 }
+
+@keyframes hero-float { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px,20px) scale(1.1); } }
+@keyframes hero-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes cta-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+@utility hero-blob { animation: hero-float 12s ease-in-out infinite; }
+@utility hero-rise { animation: hero-rise 0.7s ease-out both; }
+@utility cta-breathe { animation: cta-breathe 2.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .hero-blob, .hero-rise, .cta-breathe { animation: none; } }

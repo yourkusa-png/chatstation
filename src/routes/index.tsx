@@ -125,23 +125,25 @@ function Landing() {
 
       <main>
         <section className="grain relative overflow-hidden border-b border-border">
-          <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-20 lg:grid-cols-[1.1fr_1fr] lg:py-28">
-            <div>
+          <div aria-hidden className="hero-blob pointer-events-none absolute -left-24 -top-24 size-80 rounded-full bg-primary/20 blur-3xl" />
+          <div aria-hidden className="hero-blob pointer-events-none absolute -bottom-24 right-0 size-96 rounded-full bg-accent/20 blur-3xl [animation-delay:-6s]" />
+          <div className="relative mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:py-28">
+            <div className="hero-rise text-center lg:text-left">
               <p className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-widest text-primary">
                 <span className="size-1.5 animate-pulse rounded-full bg-primary" />
                 Live now
               </p>
-              <h1 className="mt-6 text-5xl font-bold leading-[1.05] sm:text-6xl">
+              <h1 className="mt-6 text-4xl font-bold leading-[1.05] sm:text-6xl">
                 Talk to a total
-                <span className="block text-primary">stranger.</span>
+                <span className="block bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">stranger.</span>
               </h1>
-              <p className="mt-6 max-w-xl text-lg text-muted-foreground">
+              <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground sm:text-lg lg:mx-0">
                 CHAT STATION drops you straight into a one-to-one video call with somebody else who
                 pressed start. Say hi, have a chat, or skip to the next face.
               </p>
               <div className="mt-8">
                 {user ? (
-                  <Button asChild className="glow-ring h-16 w-full rounded-2xl text-lg font-bold sm:w-auto sm:px-10">
+                  <Button asChild className="glow-ring cta-breathe h-16 w-full rounded-2xl bg-gradient-to-r from-primary to-accent text-lg font-bold sm:w-auto sm:px-10">
                     <Link to="/chat">
                       <span className="size-2.5 animate-pulse rounded-full bg-primary-foreground" />
                       Start Live Video Chat
@@ -151,7 +153,7 @@ function Landing() {
                   <Button
                     onClick={startWithGoogle}
                     disabled={busy}
-                    className="glow-ring h-16 w-full rounded-2xl text-lg font-bold sm:w-auto sm:px-10"
+                    className="glow-ring cta-breathe h-16 w-full rounded-2xl bg-gradient-to-r from-primary to-accent text-lg font-bold sm:w-auto sm:px-10"
                   >
                     {busy ? (
                       <Loader2 className="size-5 animate-spin" />

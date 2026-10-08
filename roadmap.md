@@ -10,3 +10,5 @@
 - [ ] Stabilize camera controls and live front/rear switching.
 - [ ] Add emoji insertion and realtime GIF messaging.
 - [ ] Verify the upgraded chat experience on mobile and desktop.
+- [x] Real live online counter (header + home)
+- [x] Hero: smooth gradient, light motion, better mobile CTA
