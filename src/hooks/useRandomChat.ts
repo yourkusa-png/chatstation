@@ -496,7 +496,12 @@ export function useRandomChat() {
       if (cancelled) return;
       if (pc.connectionState === "connected") setStatus("connected");
       if (pc.connectionState === "failed") {
-        setError("The direct video connection failed. Try Next for a different person.");
+        try {
+          pc.restartIce();
+        } catch {
+          /* unsupported */
+        }
+        setError("Weak network — reconnecting… tap Next if it doesn't join.");
       }
     };
 
