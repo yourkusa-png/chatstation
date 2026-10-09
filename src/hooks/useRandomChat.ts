@@ -48,7 +48,14 @@ export type Preferences = {
 
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
-    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
+    {
+      urls: [
+        "stun:stun.l.google.com:19302",
+        "stun:stun1.l.google.com:19302",
+        "stun:stun2.l.google.com:19302",
+        "stun:stun.cloudflare.com:3478",
+      ],
+    },
     { urls: "stun:global.stun.twilio.com:3478" },
     // Free public relay fallback for mobile networks that block direct P2P.
     {
@@ -56,17 +63,18 @@ const ICE_SERVERS: RTCConfiguration = {
         "turn:openrelay.metered.ca:80",
         "turn:openrelay.metered.ca:443",
         "turn:openrelay.metered.ca:443?transport=tcp",
+        "turns:openrelay.metered.ca:443?transport=tcp",
       ],
       username: "openrelayproject",
       credential: "openrelayproject",
     },
   ],
-  iceCandidatePoolSize: 2,
+  iceCandidatePoolSize: 4,
   bundlePolicy: "max-bundle",
 };
 
-const VIDEO_SIZE = { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } };
-const MAX_VIDEO_BITRATE = 600_000;
+const VIDEO_SIZE = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } };
+const MAX_VIDEO_BITRATE = 1_500_000;
 
 export function useRandomChat() {
   const { user } = useAuth();
@@ -469,7 +477,7 @@ export function useRandomChat() {
           if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
           const enc = params.encodings[0]!;
           enc.maxBitrate = MAX_VIDEO_BITRATE;
-          enc.maxFramerate = 24;
+          enc.maxFramerate = 30;
           void sender.setParameters(params).catch(() => {});
         } catch {
           /* bitrate cap unsupported */
