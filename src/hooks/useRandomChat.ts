@@ -599,3 +599,114 @@ export function useRandomChat() {
         if (isInitiator) void makeOffer();
         else if (!(payload as { reply?: boolean })?.reply) {
           void signal.send({ type:
+      .on("broadcast", { event: "hello" }, ({ payload }) => {
+        if (isInitiator) void makeOffer();
+        else if (!(payload as { reply?: boolean })?.reply) {
+          void signal.send({ type: "broadcast", event: "hello", payload: { reply: true } });
+        }
+      })
+      .on("presence", { event: "sync" }, () => {
+        const online = Object.keys(signal.presenceState());
+        if (isInitiator && online.length >= 2) void makeOffer();
+      })
+      .subscribe((state) => {
+        if (state === "SUBSCRIBED") {
+          void signal.send({ type: "broadcast", event: "hello", payload: {} });
+          void signal.track({ at: Date.now() });
+        }
+      });
+
+    const messageChannel = supabase
+      .channel(`messages-${match.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `match_id=eq.${match.id}`,
+        },
+        (payload) => {
+          const row = payload.new as ChatMessage;
+          setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+          if (row.sender_id !== userId) setPartnerTyping(false);
+        },
+      )
+      .subscribe();
+
+    const matchChannel = supabase
+      .channel(`match-${match.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${match.id}` },
+        (payload) => {
+          const row = payload.new as MatchRow;
+          if (row.ended_at && row.ended_by !== userId) {
+            setStatus("partner-left");
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      void supabase.removeChannel(messageChannel);
+      void supabase.removeChannel(matchChannel);
+      teardownPeer();
+    };
+  }, [match, userId, teardownPeer]);
+
+  /* ------------------------------------------------------- leave cleanly on exit */
+
+  useEffect(() => {
+    const cleanup = () => {
+      void supabase.rpc("leave_queue");
+      if (match) void supabase.rpc("end_match", { p_match_id: match.id });
+    };
+    window.addEventListener("pagehide", cleanup);
+    return () => {
+      window.removeEventListener("pagehide", cleanup);
+    };
+  }, [match]);
+
+  useEffect(() => {
+    return () => {
+      void supabase.rpc("leave_queue");
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  return {
+    status,
+    error,
+    match,
+    partner,
+    messages,
+    partnerTyping,
+    likesReceived,
+    localStream,
+    remoteStream,
+    camOn,
+    micOn,
+    facingMode,
+    isSwitchingCamera,
+    cameraCount,
+    camPermission,
+    micPermission,
+    requestPermissions: ensureMedia,
+    disableDevices,
+    start,
+    stop,
+    next,
+    sendMessage,
+    sendGif,
+    sendTyping,
+    sendLike,
+    toggleCam,
+    toggleMic,
+    switchCamera,
+    setError,
+  };
+  }
+            
