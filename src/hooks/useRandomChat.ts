@@ -53,11 +53,13 @@ const ICE_SERVERS: RTCConfiguration = {
         "stun:stun.l.google.com:19302",
         "stun:stun1.l.google.com:19302",
         "stun:stun2.l.google.com:19302",
+        "stun:stun3.l.google.com:19302",
+        "stun:stun4.l.google.com:19302",
         "stun:stun.cloudflare.com:3478",
       ],
     },
     { urls: "stun:global.stun.twilio.com:3478" },
-    // Free public relay fallback for mobile networks that block direct P2P.
+    // Free public relay fallback for mobile networks (Jio/Airtel NAT)
     {
       urls: [
         "turn:openrelay.metered.ca:80",
@@ -73,8 +75,9 @@ const ICE_SERVERS: RTCConfiguration = {
   bundlePolicy: "max-bundle",
 };
 
-const VIDEO_SIZE = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } };
-const MAX_VIDEO_BITRATE = 1_500_000;
+// Lightweight video: 480p @ 24fps (Instant connect on 4G/5G mobile networks)
+const VIDEO_SIZE = { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 24 } };
+const MAX_VIDEO_BITRATE = 450_000;
 
 export function useRandomChat() {
   const { user } = useAuth();
@@ -187,7 +190,6 @@ export function useRandomChat() {
       const videoInputs = devices.filter((d) => d.kind === "videoinput" && d.deviceId);
       setCameraCount(videoInputs.length);
 
-      // Phones usually can't open two cameras at once: release the current one first.
       currentTrack?.stop();
 
       const size = VIDEO_SIZE;
@@ -217,7 +219,6 @@ export function useRandomChat() {
       }
 
       if (!nextTrack) {
-        // Restore the original camera.
         const s = await navigator.mediaDevices.getUserMedia({
           video: currentDeviceId ? { ...size, deviceId: { exact: currentDeviceId } } : size,
           audio: false,
@@ -420,7 +421,6 @@ export function useRandomChat() {
       if (data) {
         await loadMatch(data as string);
       } else {
-        // Re-attempt pairing in case someone joined while we were waiting.
         try {
           const matchId = await tryJoinQueue();
           if (matchId) await loadMatch(matchId);
@@ -477,7 +477,7 @@ export function useRandomChat() {
           if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
           const enc = params.encodings[0]!;
           enc.maxBitrate = MAX_VIDEO_BITRATE;
-          enc.maxFramerate = 30;
+          enc.maxFramerate = 24;
           void sender.setParameters(params).catch(() => {});
         } catch {
           /* bitrate cap unsupported */
@@ -504,6 +504,26 @@ export function useRandomChat() {
         setError("Weak network — reconnecting… tap Next if it doesn't join.");
       }
     };
+
+    pc.oniceconnectionstatechange = () => {
+      if (cancelled) return;
+      if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
+        setStatus("connected");
+      }
+    };
+
+    // Auto-fallback: if connection hangs on "connecting" for more than 7 seconds, trigger ICE restart
+    const connectTimer = setTimeout(() => {
+      if (cancelled) return;
+      if (pc.connectionState !== "connected" && pc.iceConnectionState !== "connected") {
+        try {
+          pc.restartIce();
+        } catch {
+          /* unsupported */
+        }
+        setError("Slow connection — tap Next if it doesn't join.");
+      }
+    }, 7000);
 
     const signal = supabase.channel(`signal-${match.id}`, {
       config: { broadcast: { self: false }, presence: { key: userId } },
@@ -575,115 +595,7 @@ export function useRandomChat() {
         if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
         typingTimerRef.current = setTimeout(() => setPartnerTyping(false), 2200);
       })
-      // Instant handshake: both sides say "hello" as soon as they join the
-      // channel; the initiator sends the offer the moment it hears the partner.
       .on("broadcast", { event: "hello" }, ({ payload }) => {
         if (isInitiator) void makeOffer();
         else if (!(payload as { reply?: boolean })?.reply) {
-          void signal.send({ type: "broadcast", event: "hello", payload: { reply: true } });
-        }
-      })
-      .on("presence", { event: "sync" }, () => {
-        const online = Object.keys(signal.presenceState());
-        if (isInitiator && online.length >= 2) void makeOffer();
-      })
-      .subscribe((state) => {
-        if (state === "SUBSCRIBED") {
-          void signal.send({ type: "broadcast", event: "hello", payload: {} });
-          void signal.track({ at: Date.now() });
-        }
-      });
-
-    const messageChannel = supabase
-      .channel(`messages-${match.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `match_id=eq.${match.id}`,
-        },
-        (payload) => {
-          const row = payload.new as ChatMessage;
-          setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
-          if (row.sender_id !== userId) setPartnerTyping(false);
-        },
-      )
-      .subscribe();
-
-    const matchChannel = supabase
-      .channel(`match-${match.id}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${match.id}` },
-        (payload) => {
-          const row = payload.new as MatchRow;
-          if (row.ended_at && row.ended_by !== userId) {
-            setStatus("partner-left");
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-      void supabase.removeChannel(messageChannel);
-      void supabase.removeChannel(matchChannel);
-      teardownPeer();
-    };
-  }, [match, userId, teardownPeer]);
-
-  /* ------------------------------------------------------- leave cleanly on exit */
-
-  useEffect(() => {
-    const cleanup = () => {
-      void supabase.rpc("leave_queue");
-      if (match) void supabase.rpc("end_match", { p_match_id: match.id });
-    };
-    window.addEventListener("pagehide", cleanup);
-    return () => {
-      window.removeEventListener("pagehide", cleanup);
-    };
-  }, [match]);
-
-  useEffect(() => {
-    return () => {
-      void supabase.rpc("leave_queue");
-      localStreamRef.current?.getTracks().forEach((t) => t.stop());
-    };
-  }, []);
-
-  return {
-    status,
-    error,
-    match,
-    partner,
-    messages,
-    partnerTyping,
-    likesReceived,
-    localStream,
-    remoteStream,
-    camOn,
-    micOn,
-    facingMode,
-    isSwitchingCamera,
-    cameraCount,
-    camPermission,
-    micPermission,
-    requestPermissions: ensureMedia,
-    disableDevices,
-    start,
-    stop,
-    next,
-    sendMessage,
-    sendGif,
-    sendTyping,
-    sendLike,
-    toggleCam,
-    toggleMic,
-    switchCamera,
-    setError,
-  };
-}
+          void signal.send({ type:
