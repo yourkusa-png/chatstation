@@ -148,6 +148,7 @@ export function useRandomChat() {
     setMicOn(true);
     setCamPermission("granted");
     setMicPermission("granted");
+
     const devices = await navigator.mediaDevices.enumerateDevices();
     setCameraCount(devices.filter((device) => device.kind === "videoinput").length);
     return stream;
@@ -597,12 +598,10 @@ export function useRandomChat() {
       })
       .on("broadcast", { event: "hello" }, ({ payload }) => {
         if (isInitiator) void makeOffer();
-        else if (!(payload as { reply?: boolean })?.reply) {
-          void signal.send({ type:
-      .on("broadcast", { event: "hello" }, ({ payload }) => {
-        if (isInitiator) void makeOffer();
-        else if (!(payload as { reply?: boolean })?.reply) {
+              else if (!(payload as { reply?: boolean })?.reply) {
           void signal.send({ type: "broadcast", event: "hello", payload: { reply: true } });
+                
+    
         }
       })
       .on("presence", { event: "sync" }, () => {
@@ -650,6 +649,7 @@ export function useRandomChat() {
 
     return () => {
       cancelled = true;
+      clearTimeout(connectTimer);
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       void supabase.removeChannel(messageChannel);
       void supabase.removeChannel(matchChannel);
@@ -708,5 +708,4 @@ export function useRandomChat() {
     switchCamera,
     setError,
   };
-  }
-            
+}
