@@ -75,9 +75,31 @@ const ICE_SERVERS: RTCConfiguration = {
   bundlePolicy: "max-bundle",
 };
 
-// Lightweight video: 480p @ 24fps (Instant connect on 4G/5G mobile networks)
-const VIDEO_SIZE = { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 24 } };
-const MAX_VIDEO_BITRATE = 450_000;
+// Adaptive quality: strong phones on fast networks get 720p, weak ones 360p.
+// Runs entirely on the device — no server cost.
+function pickQuality() {
+  if (typeof navigator === "undefined") return { w: 640, h: 480, fps: 24, bitrate: 450_000 };
+  const nav = navigator as Navigator & {
+    deviceMemory?: number;
+    connection?: { effectiveType?: string; saveData?: boolean };
+  };
+  const cores = nav.hardwareConcurrency ?? 4;
+  const mem = nav.deviceMemory ?? 4;
+  const net = nav.connection?.effectiveType ?? "4g";
+  const save = nav.connection?.saveData ?? false;
+  if (save || net === "slow-2g" || net === "2g" || net === "3g" || cores <= 4 || mem <= 2) {
+    return { w: 480, h: 360, fps: 20, bitrate: 300_000 };
+  }
+  if (cores >= 8 && mem >= 6) return { w: 1280, h: 720, fps: 30, bitrate: 1_200_000 };
+  return { w: 640, h: 480, fps: 24, bitrate: 600_000 };
+}
+const QUALITY = pickQuality();
+const VIDEO_SIZE = {
+  width: { ideal: QUALITY.w },
+  height: { ideal: QUALITY.h },
+  frameRate: { ideal: QUALITY.fps, max: QUALITY.fps },
+};
+const MAX_VIDEO_BITRATE = QUALITY.bitrate;
 
 export function useRandomChat() {
   const { user } = useAuth();
@@ -478,7 +500,10 @@ export function useRandomChat() {
           if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
           const enc = params.encodings[0]!;
           enc.maxBitrate = MAX_VIDEO_BITRATE;
-          enc.maxFramerate = 24;
+          enc.maxFramerate = QUALITY.fps;
+          // On weak networks keep the call smooth by lowering resolution, not freezing.
+          (params as RTCRtpSendParameters & { degradationPreference?: string }).degradationPreference =
+            "maintain-framerate";
           void sender.setParameters(params).catch(() => {});
         } catch {
           /* bitrate cap unsupported */
