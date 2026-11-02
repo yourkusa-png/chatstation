@@ -17,6 +17,7 @@ export type Profile = {
   age_confirmed: boolean;
   is_premium: boolean;
   created_at: string;
+  last_seen_at: string;
 };
 
 type AuthContextValue = {

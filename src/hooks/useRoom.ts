@@ -124,7 +124,7 @@ export function useRoom(roomId: string | undefined) {
   );
 
   const handleSignal = useCallback(
-    async (from: string, payload: { type: string; sdp?: string; candidate?: RTCIceCandidateInit }) => {
+    async (from: string, payload: { type: string; sdp?: string; candidate?: RTCIceCandidateInit; muted?: boolean }) => {
       if (!userId) return;
       let pc = pcsRef.current.get(from);
       if (!pc && payload.type === "offer") {
@@ -160,6 +160,16 @@ export function useRoom(roomId: string | undefined) {
         }
       } catch {
         destroyPeer(from);
+      }
+      if (payload.type === "host-mute") {
+        const muted = payload.muted ?? true;
+        const track = localStreamRef.current?.getAudioTracks()[0];
+        if (track && track.enabled === muted) {
+          track.enabled = !muted;
+          micOnRef.current = !muted;
+          setMicOn(!muted);
+          channelRef.current?.track({ ...metaRef.current, mic_on: !muted });
+        }
       }
     },
     [userId, createPeer, sendSignal, destroyPeer],
@@ -374,6 +384,18 @@ export function useRoom(roomId: string | undefined) {
     channelRef.current?.track({ ...metaRef.current, mic_on: track.enabled });
   }, []);
 
+  const hostSetMic = useCallback(
+    (peerId: string, muted: boolean) => {
+      if (!room || room.host_id !== userId) return;
+      channelRef.current?.send({
+        type: "broadcast",
+        event: "signal",
+        payload: { from: userId, to: peerId, payload: { type: "host-mute", muted } },
+      });
+    },
+    [room, userId],
+  );
+
   const sendMessage = useCallback(
     async (body: string) => {
       if (!userId || !roomId || !body.trim()) return;
@@ -402,6 +424,7 @@ export function useRoom(roomId: string | undefined) {
     endRoom,
     toggleCam,
     toggleMic,
+    hostSetMic,
     sendMessage,
   };
 }

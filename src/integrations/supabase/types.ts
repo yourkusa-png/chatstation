@@ -139,6 +139,7 @@ export type Database = {
           id: string
           interests: string[]
           is_premium: boolean
+          last_seen_at: string
         }
         Insert: {
           age_confirmed?: boolean
@@ -151,6 +152,7 @@ export type Database = {
           id: string
           interests?: string[]
           is_premium?: boolean
+          last_seen_at?: string
         }
         Update: {
           age_confirmed?: boolean
@@ -163,6 +165,7 @@ export type Database = {
           id?: string
           interests?: string[]
           is_premium?: boolean
+          last_seen_at?: string
         }
         Relationships: []
       }

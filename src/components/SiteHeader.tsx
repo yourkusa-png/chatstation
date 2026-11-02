@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   CameraOff,
+  History,
   LogOut,
   Menu,
   Shield,
@@ -13,10 +14,10 @@ import {
 import { useState } from "react";
 
 import lovableMark from "@/assets/chatstation-logo.png";
-import { useOnlineCount } from "@/hooks/useOnlineCount";
+import { useOnlineUsers } from "@/hooks/useOnlineUsers";
 
 function OnlineBadge() {
-  const n = useOnlineCount();
+  const { count: n } = useOnlineUsers();
   if (n < 1) return null;
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
@@ -125,6 +126,9 @@ export function SiteHeader({ onDisableDevices, onOpenFilters }: SiteHeaderProps)
                     </span>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild className="h-10 cursor-pointer">
+                    <Link to="/history"><History /> History</Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild className="h-10 cursor-pointer">
                     <Link to="/profile"><UserRound /> Profile</Link>
                   </DropdownMenuItem>
