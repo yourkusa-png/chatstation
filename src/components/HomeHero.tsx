@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
+import { LiveRoomsSection } from "@/components/LiveRoomsSection";
 import {
-  Video, VideoOff, Mic, MicOff, RefreshCw, Zap, Loader2, Headphones, Users, Radio, MessageSquare,
+  Video, VideoOff, Mic, MicOff, RefreshCw, Zap, Loader2, Headphones, Radio, MessageSquare,
 } from "lucide-react";
 
 type Props = {
@@ -12,12 +13,6 @@ type Props = {
   mode: "video" | "audio";
   setMode: (m: "video" | "audio") => void;
 };
-
-const LOUNGES = [
-  { title: "Hindi Late Night Talks", tags: "Chill · Friends · Life", emoji: "🌙" },
-  { title: "Music & Chill", tags: "Lo-fi · EDM · Vibes", emoji: "🎧" },
-  { title: "Global Strangers Meet", tags: "Talk · Share · Make Friends", emoji: "🌍" },
-];
 
 export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -72,11 +67,11 @@ export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
   return (
     <section>
       <div className="mx-auto w-full max-w-md px-4 pb-8 pt-3 sm:max-w-xl">
-        <div className="grid grid-cols-2 gap-2 text-sm font-semibold">
+        <div className="grid grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1 text-sm font-semibold">
           {(["video", "audio"] as const).map((m) => (
             <button key={m} type="button" onClick={() => { if (m === "audio") stop(); setMode(m); }}
-              className={`flex items-center justify-center gap-2 rounded-2xl border py-2.5 transition-colors ${mode === m ? "border-primary/60 bg-card text-foreground" : "border-border text-muted-foreground"}`}>
-              {m === "video" ? <><Video className="size-4 text-destructive" /> Video Call</> : <><Mic className="size-4" /> Audio Call</>}
+              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition-all ${mode === m ? "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground"}`}>
+              {m === "video" ? <><Video className="size-4" /> Video Call</> : <><Mic className="size-4" /> Audio Call</>}
             </button>
           ))}
         </div>
@@ -133,23 +128,7 @@ export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
           ))}
         </div>
 
-        <div className="mt-7 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Live Rooms</h2>
-        </div>
-        <div className="mt-3 grid gap-3">
-          {LOUNGES.map((r) => (
-            <div key={r.title} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/30 to-accent/30 text-2xl">{r.emoji}</div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{r.title}</p>
-                <p className="truncate text-xs text-muted-foreground">{r.tags}</p>
-              </div>
-              <Cta className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
-                <Users className="size-3" /> Join
-              </Cta>
-            </div>
-          ))}
-        </div>
+        <LiveRoomsSection signedIn={signedIn} busy={busy} onGoogle={onGoogle} />
       </div>
     </section>
   );
