@@ -16,50 +16,42 @@ type Props = {
 export function HomeHero({ signedIn, busy, onGoogle }: Props) {
   const { users: onlineUsers, count: online } = useOnlineUsers();
 
-  const card =
-    "flex w-full items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:bg-secondary disabled:opacity-60";
+  const startBtn =
+    "flex size-44 flex-col items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95 disabled:opacity-60";
 
-  const videoInner = (
+  const startInner = (
     <>
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-        {busy ? <Loader2 className="size-5 animate-spin" /> : <Video className="size-5" />}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-base font-semibold">Instant Video Match</span>
-        <span className="block text-xs text-muted-foreground">1-on-1 video with a random person</span>
-      </span>
-      <ChevronRight className="size-5 text-muted-foreground" />
+      {busy ? <Loader2 className="size-10 animate-spin" /> : <Video className="size-10" />}
+      <span className="text-xl font-bold tracking-wide">START</span>
     </>
   );
 
   return (
     <section>
-      <div className="mx-auto w-full max-w-md px-4 pb-8 pt-5 sm:max-w-xl">
-        <h1 className="text-2xl font-bold">Talk to someone new</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {online > 0 ? `${online} online now · ` : ""}Free · Skip anytime · 18+
-        </p>
+      <div className="mx-auto w-full max-w-md px-4 pb-8 pt-6 sm:max-w-xl">
+        <div className="flex flex-col items-center text-center">
+          <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-medium">
+            <span className="size-2 rounded-full bg-primary" />
+            {online > 0 ? `${online} online now` : "Video chat"}
+          </span>
+          <h1 className="mt-4 text-2xl font-bold">Meet someone new</h1>
+          <p className="mt-1 text-sm text-muted-foreground">1-on-1 video · Free · Skip anytime · 18+</p>
 
-        <div className="mt-5 grid gap-3">
-          {signedIn ? (
-            <Link to="/chat" className={card}>{videoInner}</Link>
-          ) : (
-            <button type="button" onClick={onGoogle} disabled={busy} className={card}>{videoInner}</button>
-          )}
-          <a href="#rooms" className={card}>
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-foreground">
-              <Mic className="size-5" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-base font-semibold">Voice Rooms</span>
-              <span className="block text-xs text-muted-foreground">Join a live room and talk with your voice</span>
-            </span>
-            <ChevronRight className="size-5 text-muted-foreground" />
+          <div className="mt-8">
+            {signedIn ? (
+              <Link to="/chat" className={startBtn} aria-label="Start video match">{startInner}</Link>
+            ) : (
+              <button type="button" onClick={onGoogle} disabled={busy} className={startBtn} aria-label="Start video match">{startInner}</button>
+            )}
+          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            {signedIn ? "Tap START to match instantly" : "One tap with Google to start"}
+          </p>
+
+          <a href="#rooms" className="mt-6 inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-secondary">
+            <Mic className="size-4" /> Live Rooms <ChevronRight className="size-4" />
           </a>
         </div>
-        {!signedIn && (
-          <p className="mt-2 text-center text-xs text-muted-foreground">One tap with Google to start</p>
-        )}
 
         {signedIn && onlineUsers.length > 0 && (
           <>
