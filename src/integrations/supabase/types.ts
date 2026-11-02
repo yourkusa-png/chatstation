@@ -62,11 +62,48 @@ export type Database = {
         }
         Relationships: []
       }
+      follows: {
+        Row: {
+          created_at: string
+          followed_id: string
+          follower_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          followed_id: string
+          follower_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          followed_id?: string
+          follower_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follows_followed_id_fkey"
+            columns: ["followed_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           ended_at: string | null
           ended_by: string | null
           id: string
+          mode: string
           started_at: string
           user_a: string
           user_b: string
@@ -75,6 +112,7 @@ export type Database = {
           ended_at?: string | null
           ended_by?: string | null
           id?: string
+          mode?: string
           started_at?: string
           user_a: string
           user_b: string
@@ -83,6 +121,7 @@ export type Database = {
           ended_at?: string | null
           ended_by?: string | null
           id?: string
+          mode?: string
           started_at?: string
           user_a?: string
           user_b?: string
@@ -365,6 +404,7 @@ export type Database = {
           interests: string[]
           is_premium: boolean
           joined_at: string
+          mode: string
           user_id: string
           want_country: string | null
           want_gender: string | null
@@ -375,6 +415,7 @@ export type Database = {
           interests?: string[]
           is_premium?: boolean
           joined_at?: string
+          mode?: string
           user_id: string
           want_country?: string | null
           want_gender?: string | null
@@ -385,6 +426,7 @@ export type Database = {
           interests?: string[]
           is_premium?: boolean
           joined_at?: string
+          mode?: string
           user_id?: string
           want_country?: string | null
           want_gender?: string | null
@@ -396,7 +438,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      current_match: { Args: never; Returns: string }
+      current_match:
+        | { Args: never; Returns: string }
+        | { Args: { p_mode?: string }; Returns: string }
       end_match: { Args: { p_match_id: string }; Returns: undefined }
       has_role: {
         Args: {
@@ -411,14 +455,24 @@ export type Database = {
         Returns: boolean
       }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
-      join_queue: {
-        Args: {
-          p_interests: string[]
-          p_want_country: string
-          p_want_gender: string
-        }
-        Returns: string
-      }
+      join_queue:
+        | {
+            Args: {
+              p_interests: string[]
+              p_want_country: string
+              p_want_gender: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_interests: string[]
+              p_mode?: string
+              p_want_country: string
+              p_want_gender: string
+            }
+            Returns: string
+          }
       leave_queue: { Args: never; Returns: undefined }
     }
     Enums: {

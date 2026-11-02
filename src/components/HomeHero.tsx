@@ -3,7 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { useOnlineUsers, type OnlineUser } from "@/hooks/useOnlineUsers";
 import { LiveRoomsSection } from "@/components/LiveRoomsSection";
 import { getAvatarUrl } from "@/lib/avatars";
-import { Video, Mic, Loader2, ChevronRight } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Video, Mic, Loader2, ChevronRight, UserRound } from "lucide-react";
 
 type Props = {
   signedIn: boolean;
@@ -15,42 +16,108 @@ type Props = {
 
 export function HomeHero({ signedIn, busy, onGoogle }: Props) {
   const { users: onlineUsers, count: online } = useOnlineUsers();
+  const { profile } = useAuth();
+  const [mode, setMode] = useState<"video" | "audio">("video");
+  const [myAvatar, setMyAvatar] = useState<string | null>(null);
 
-  const startBtn =
-    "flex size-44 flex-col items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95 disabled:opacity-60";
+  useEffect(() => {
+    let cancelled = false;
+    void getAvatarUrl(profile?.avatar_url ?? null).then((u) => {
+      if (!cancelled) setMyAvatar(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.avatar_url]);
 
-  const startInner = (
-    <>
-      {busy ? <Loader2 className="size-10 animate-spin" /> : <Video className="size-10" />}
-      <span className="text-xl font-bold tracking-wide">START</span>
-    </>
-  );
+  const bigCta =
+    "flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-base font-bold text-primary-foreground shadow transition-transform active:scale-[0.98] disabled:opacity-60";
 
   return (
     <section>
-      <div className="mx-auto w-full max-w-md px-4 pb-8 pt-6 sm:max-w-xl">
-        <div className="flex flex-col items-center text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-medium">
+      <div className="mx-auto w-full max-w-md px-4 pb-8 pt-4 sm:max-w-xl">
+        {/* top row: real online count + own profile / free sign-up */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium">
             <span className="size-2 rounded-full bg-primary" />
-            {online > 0 ? `${online} online now` : "Video chat"}
+            {online > 0 ? `${online} online now` : "Online now"}
           </span>
-          <h1 className="mt-4 text-2xl font-bold">Meet someone new</h1>
-          <p className="mt-1 text-sm text-muted-foreground">1-on-1 video · Free · Skip anytime · 18+</p>
+          {signedIn ? (
+            <Link
+              to="/profile"
+              className="flex min-w-0 items-center gap-2 rounded-full border border-border py-1 pl-1 pr-3 hover:bg-secondary"
+            >
+              {myAvatar ? (
+                <img src={myAvatar} alt="" className="size-7 shrink-0 rounded-full object-cover" />
+              ) : (
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
+                  {(profile?.display_name ?? "Y").charAt(0).toUpperCase()}
+                </span>
+              )}
+              <span className="max-w-24 truncate text-xs font-semibold">
+                {profile?.display_name ?? "You"}
+              </span>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={onGoogle}
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+            >
+              {busy ? <Loader2 className="size-4 animate-spin" /> : <UserRound className="size-4" />}
+              Sign up free
+            </button>
+          )}
+        </div>
 
-          <div className="mt-8">
-            {signedIn ? (
-              <Link to="/chat" className={startBtn} aria-label="Start video match">{startInner}</Link>
-            ) : (
-              <button type="button" onClick={onGoogle} disabled={busy} className={startBtn} aria-label="Start video match">{startInner}</button>
-            )}
-          </div>
-          <p className="mt-4 text-xs text-muted-foreground">
-            {signedIn ? "Tap START to match instantly" : "One tap with Google to start"}
-          </p>
+        <h1 className="mt-6 text-center text-2xl font-bold">Meet someone new</h1>
+        <p className="mt-1 text-center text-sm text-muted-foreground">
+          1-on-1 · Free · Skip anytime · 18+
+        </p>
 
-          <a href="#rooms" className="mt-6 inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-secondary">
-            <Mic className="size-4" /> Live Rooms <ChevronRight className="size-4" />
-          </a>
+        {/* choose the mode: one-to-one video or one-to-one audio */}
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          {(["video", "audio"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={`flex items-center justify-center gap-2 rounded-2xl border py-4 text-sm font-semibold transition-colors ${
+                mode === m
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "border-border text-muted-foreground hover:bg-secondary"
+              }`}
+            >
+              {m === "video" ? <Video className="size-5" /> : <Mic className="size-5" />}
+              {m === "video" ? "1-to-1 Video" : "1-to-1 Audio"}
+            </button>
+          ))}
+        </div>
+
+        {/* the big start button, labelled by the chosen mode */}
+        <div className="mt-3">
+          {signedIn ? (
+            <Link
+              to="/chat"
+              search={{ mode }}
+              className={bigCta}
+            >
+              {mode === "video" ? <Video className="size-5" /> : <Mic className="size-5" />}
+              {mode === "video" ? "Start Video Chat" : "Start Audio Chat"}
+            </Link>
+          ) : (
+            <button type="button" onClick={onGoogle} disabled={busy} className={bigCta}>
+              {busy ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : mode === "video" ? (
+                <Video className="size-5" />
+              ) : (
+                <Mic className="size-5" />
+              )}
+              {mode === "video" ? "Start Video Chat" : "Start Audio Chat"}
+            </button>
+          )}
         </div>
 
         {signedIn && onlineUsers.length > 0 && (
