@@ -384,6 +384,18 @@ export function useRoom(roomId: string | undefined) {
     channelRef.current?.track({ ...metaRef.current, mic_on: track.enabled });
   }, []);
 
+  const hostSetMic = useCallback(
+    (peerId: string, muted: boolean) => {
+      if (!room || room.host_id !== userId) return;
+      channelRef.current?.send({
+        type: "broadcast",
+        event: "signal",
+        payload: { from: userId, to: peerId, payload: { type: "host-mute", muted } },
+      });
+    },
+    [room, userId],
+  );
+
   const sendMessage = useCallback(
     async (body: string) => {
       if (!userId || !roomId || !body.trim()) return;
@@ -412,6 +424,7 @@ export function useRoom(roomId: string | undefined) {
     endRoom,
     toggleCam,
     toggleMic,
+    hostSetMic,
     sendMessage,
   };
 }
