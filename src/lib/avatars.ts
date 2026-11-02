@@ -11,7 +11,7 @@ export async function getAvatarUrl(raw: string | null | undefined): Promise<stri
   if (!raw) return null;
   if (raw.startsWith("https://")) return raw;
   if (cache.has(raw)) return cache.get(raw)!;
-  const path = raw.split("?")[0];
+  const path = raw.split("?")[0] || raw;
   const { data } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60 * 24 * 7);
   const signed = data?.signedUrl;
   if (!signed) return null;
