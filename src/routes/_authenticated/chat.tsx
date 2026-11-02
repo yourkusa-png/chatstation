@@ -17,12 +17,11 @@ import {
   Lock,
   Loader2,
   ShieldAlert,
+  SlidersHorizontal,
+  LogOut,
   Smile,
   ImageIcon,
   Search,
-  PhoneOff,
-  MessageSquare,
-  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -72,12 +71,6 @@ export const Route = createFileRoute("/_authenticated/chat")({
 const ANY = "__any__";
 const EMOJIS = ["😀", "😂", "😍", "🥰", "😎", "🤩", "😊", "😉", "🤗", "🤔", "😮", "😢", "❤️", "🔥", "👏", "👍", "👋", "🎉", "🌍", "✨"];
 
-function formatCallTime(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
 function ChatPage() {
   const { user, profile, refreshProfile } = useAuth();
   const chat = useRandomChat();
@@ -104,8 +97,6 @@ function ChatPage() {
   const [gifQuery, setGifQuery] = useState("");
   const [gifSearchTerm, setGifSearchTerm] = useState("");
   const [sendingGif, setSendingGif] = useState<string | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [callSeconds, setCallSeconds] = useState(0);
 
   const isPremium = profile?.is_premium ?? false;
 
@@ -143,7 +134,7 @@ function ChatPage() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [chat.messages, chat.partnerTyping, chatOpen]);
+  }, [chat.messages, chat.partnerTyping]);
 
   useEffect(() => {
     if (chat.error) toast.error(chat.error);
@@ -159,19 +150,6 @@ function ChatPage() {
   useEffect(() => {
     if (profile?.interests?.length) setInterestText(profile.interests.join(", "));
   }, [profile?.interests]);
-
-  // Live call timer — resets for every new partner.
-  useEffect(() => {
-    if (chat.status !== "connected") {
-      setCallSeconds(0);
-      return;
-    }
-    const startedAt = Date.now();
-    const timer = window.setInterval(() => {
-      setCallSeconds(Math.floor((Date.now() - startedAt) / 1000));
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [chat.status, chat.match?.id]);
 
   const interests = interestText
     .split(",")
@@ -332,7 +310,6 @@ function ChatPage() {
   };
 
   const running = chat.status !== "idle" && chat.status !== "error";
-  const connected = chat.status === "connected";
   const permissionsGranted =
     chat.camPermission === "granted" &&
     chat.micPermission === "granted" &&
@@ -348,27 +325,18 @@ function ChatPage() {
     }
   }
 
-  function startChat() {
-    void chat.start({
-      interests,
-      wantGender: wantGender !== ANY ? wantGender : null,
-      wantCountry: wantCountry !== ANY ? wantCountry : null,
-    });
-  }
-
+  const connected = chat.status === "connected";
   const overlayBtn =
-    "size-10 rounded-full border border-border/50 bg-background/60 text-foreground backdrop-blur hover:bg-background/80";
-  const deviceBtn =
-    "size-12 rounded-full border border-border/50 backdrop-blur transition-colors";
+    "size-11 rounded-full border border-border/50 bg-background/60 text-foreground backdrop-blur hover:bg-background/80";
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       <SiteHeader onDisableDevices={chat.disableDevices} onOpenFilters={() => setFiltersOpen(true)} />
-      <main className="relative mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col sm:p-3">
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-surface sm:rounded-3xl sm:border sm:border-border">
-          {/* ---------------- stranger — full screen ---------------- */}
+      <main className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col sm:py-3">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface sm:rounded-3xl sm:border sm:border-border">
+          {/* ---------------- stranger (top) ---------------- */}
           <section className="relative min-h-0 flex-1 overflow-hidden bg-background">
-            <video ref={remoteRef} autoPlay playsInline className="absolute inset-x-0 top-0 h-1/2 w-full object-cover" />
+            <video ref={remoteRef} autoPlay playsInline className="size-full object-cover" />
 
             {!connected && (
               <div className="grain absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
@@ -396,22 +364,16 @@ function ChatPage() {
             )}
 
             {connected && chat.partner && (
-              <div className="absolute left-3 top-3 z-10 flex max-w-[75%] items-center gap-2 rounded-full border border-border/50 bg-background/60 py-1 pl-1 pr-3 text-xs backdrop-blur">
-                <span className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-pink font-display text-sm font-bold text-primary-foreground">
+              <div className="absolute left-3 top-3 flex max-w-[70%] items-center gap-2 rounded-full border border-border/50 bg-background/60 py-1 pl-1 pr-3 text-xs backdrop-blur">
+                <span className="flex size-8 items-center justify-center rounded-full bg-primary font-display text-sm font-bold text-primary-foreground">
                   {chat.partner.display_name.slice(0, 1).toUpperCase()}
                 </span>
                 <span className="truncate">
-                  <span className="font-semibold">{chat.partner.display_name}</span>
-                  <span className="text-muted-foreground"> · {countryLabel(chat.partner.country)}</span>
-                  <span className="ml-2 inline-flex items-center gap-1 font-medium text-primary">
-                    <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-                    {formatCallTime(callSeconds)}
-                  </span>
+                  {chat.partner.display_name} · {countryLabel(chat.partner.country)}
                 </span>
               </div>
             )}
 
-            {/* top-right: like + report */}
             <div className="absolute right-3 top-3 z-10 flex flex-col gap-2">
               <Button
                 size="icon"
@@ -427,300 +389,225 @@ function ChatPage() {
                 }}
                 aria-label="Send like"
               >
-                <Heart className="size-5 fill-current text-pink" />
+                <Heart className="size-5 fill-current text-destructive" />
               </Button>
-              {running && (
+            {running && (
+              <>
+
                 <Button
                   size="icon"
                   variant="destructive"
-                  className="size-10 rounded-full"
+                  className="size-11 rounded-full"
                   onClick={() => setReportOpen(true)}
                   disabled={!chat.partner}
                   aria-label="Report"
                 >
-                  <Flag className="size-4" />
+                  <Flag className="size-5" />
                 </Button>
-              )}
+                <Button size="icon" className={overlayBtn} onClick={() => chat.next()} aria-label="Next">
+                  <SkipForward className="size-5" />
+                </Button>
+              </>
+            )}
             </div>
-
             {likeBurst > 0 && (
               <div key={`${chat.likesReceived}-${likeBurst}`} className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-live="polite">
                 <Heart className="like-pop size-20 fill-destructive text-destructive" />
                 <span className="sr-only">Like received</span>
               </div>
             )}
+          </section>
 
-            {/* self view — small floating window (hidden while the chat panel is open) */}
-            <div className="absolute inset-x-0 bottom-0 z-[5] h-1/2 overflow-hidden border-t-2 border-primary/60 bg-surface">
-              {chat.localStream ? (
-                <video
-                  ref={localRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className={`size-full object-cover ${chat.facingMode === "user" ? "scale-x-[-1]" : ""}`}
-                />
-              ) : (
-                <div className="flex size-full items-center justify-center">
-                  <VideoOff className="size-6 text-muted-foreground" />
-                </div>
-              )}
-            </div>
-
-            {/* floating text chat panel */}
-            {chatOpen && (
-              <div className="absolute inset-x-3 bottom-24 z-20 flex max-h-[48%] flex-col overflow-hidden rounded-3xl border border-border/60 bg-background/95 shadow-2xl backdrop-blur">
-                <div className="flex items-center justify-between border-b border-border/60 px-4 py-2">
-                  <span className="text-sm font-semibold">
-                    {connected ? `Chat with ${chat.partner?.display_name ?? "stranger"}` : "Text chat"}
-                  </span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-8"
-                    onClick={() => setChatOpen(false)}
-                    aria-label="Close chat"
-                  >
-                    <X className="size-4" />
-                  </Button>
-                </div>
-                <div
-                  ref={scrollRef}
-                  className="flex min-h-20 flex-1 flex-col items-end gap-1.5 overflow-y-auto p-3"
-                >
-                  {chat.messages.slice(-30).map((m) => {
-                    const mine = m.sender_id === user?.id;
-                    return (
-                      <div key={m.id} className="flex max-w-[85%] flex-col items-end">
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}{" "}
-                          <span className="font-semibold">{mine ? "You" : chat.partner?.display_name ?? "Stranger"}</span>
-                        </span>
-                        {m.message_type === "gif" && m.media_url ? (
-                          <img
-                            src={m.media_url}
-                            alt="Shared GIF"
-                            loading="lazy"
-                            className="max-h-24 w-auto max-w-[10rem] rounded-xl border border-border/40 object-contain"
-                          />
-                        ) : (
-                          <span
-                            className={
-                              mine
-                                ? "rounded-2xl rounded-br-sm bg-primary px-3 py-1.5 text-sm text-primary-foreground"
-                                : "rounded-2xl rounded-bl-sm bg-secondary px-3 py-1.5 text-sm"
-                            }
-                          >
-                            {m.body}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {chat.partnerTyping && (
-                    <span className="rounded-full bg-secondary px-3 py-1 text-xs italic">
-                      typing…
-                    </span>
-                  )}
-                  {!connected && chat.messages.length === 0 && (
-                    <span className="py-6 text-center text-xs text-muted-foreground">
-                      Messages open when the call connects.
-                    </span>
-                  )}
-                </div>
-                <form onSubmit={handleSend} className="flex items-center gap-1.5 border-t border-border/60 p-2">
-                  <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        className="size-10 shrink-0 rounded-full"
-                        disabled={!connected}
-                        aria-label="Add emoji"
-                      >
-                        <Smile className="size-5" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent side="top" align="start" className="w-64 p-2">
-                      <div className="grid grid-cols-5 gap-1" aria-label="Emoji picker">
-                        {EMOJIS.map((emoji) => (
-                          <Button key={emoji} type="button" variant="ghost" size="icon" className="text-xl" onClick={() => insertEmoji(emoji)}>
-                            {emoji}
-                          </Button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  <Popover open={gifOpen} onOpenChange={setGifOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        className="size-10 shrink-0 rounded-full"
-                        disabled={!connected}
-                        aria-label="Send a GIF"
-                      >
-                        <ImageIcon className="size-5" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent side="top" align="start" className="w-[min(22rem,calc(100vw-1.5rem))] p-3">
-                      <form
-                        className="mb-3 flex gap-2"
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          setGifSearchTerm(gifQuery.trim());
-                        }}
-                      >
-                        <Input value={gifQuery} onChange={(event) => setGifQuery(event.target.value)} placeholder="Search GIFs" maxLength={60} />
-                        <Button type="submit" size="icon" aria-label="Search GIFs"><Search className="size-4" /></Button>
-                      </form>
-                      <div className="grid max-h-52 grid-cols-3 gap-1.5 overflow-y-auto">
-                        {gifsLoading ? (
-                          <div className="col-span-3 flex h-32 items-center justify-center"><Loader2 className="size-5 animate-spin text-primary" /></div>
-                        ) : gifResults?.error ? (
-                          <p className="col-span-3 py-8 text-center text-sm text-muted-foreground">{gifResults.error}</p>
-                        ) : gifResults?.gifs.length ? (
-                          gifResults.gifs.map((gif) => (
-                            <Button key={gif.id} type="button" variant="ghost" className="h-20 overflow-hidden rounded-lg p-0" disabled={sendingGif === gif.url} onClick={() => void sendGif(gif.url)} aria-label="Send this GIF">
-                              <img src={gif.url} alt="GIF result" loading="lazy" className="size-full object-cover" />
-                            </Button>
-                          ))
-                        ) : (
-                          <p className="col-span-3 py-8 text-center text-sm text-muted-foreground">No GIFs found</p>
-                        )}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  <Input
-                    ref={messageInputRef}
-                    value={draft}
-                    onChange={(e) => {
-                      setDraft(e.target.value);
-                      chat.sendTyping();
-                    }}
-                    placeholder={connected ? "Say something…" : "Chat opens when connected"}
-                    disabled={!connected}
-                    maxLength={500}
-                    className="h-10 min-w-0 flex-1 rounded-full"
-                  />
-                  <Button
-                    type="submit"
-                    size="icon"
-                    className="size-10 shrink-0 rounded-full"
-                    disabled={!connected || !draft.trim()}
-                    aria-label="Send"
-                  >
-                    <Send className="size-5" />
-                  </Button>
-                </form>
+          {/* ---------------- you (bottom) ---------------- */}
+          <section className="relative min-h-0 flex-1 overflow-hidden border-t border-border bg-background">
+            <video
+              ref={localRef}
+              autoPlay
+              playsInline
+              muted
+              className={`size-full object-cover ${chat.facingMode === "user" ? "scale-x-[-1]" : ""}`}
+            />
+            {!chat.localStream && (
+              <div className="absolute inset-0 flex items-center justify-center bg-surface">
+                <VideoOff className="size-8 text-muted-foreground" />
               </div>
             )}
 
-            {/* ---------------- phone-style call bar ---------------- */}
-            <div className="absolute inset-x-0 bottom-0 z-30 flex items-center justify-center gap-2.5 bg-gradient-to-t from-background via-background/85 to-transparent px-3 pb-5 pt-8">
+            {/* top-left: stable camera controls */}
+            <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full border border-border/50 bg-background/45 p-1 backdrop-blur">
+              <Button
+                size="icon"
+                className={chat.micOn && permissionsGranted ? overlayBtn : "size-11 rounded-full"}
+                variant={chat.micOn && permissionsGranted ? "default" : "destructive"}
+                onClick={chat.toggleMic}
+                disabled={!permissionsGranted}
+                aria-label="Toggle microphone"
+              >
+                {chat.micOn && permissionsGranted ? <Mic className="size-5" /> : <MicOff className="size-5" />}
+              </Button>
+              <Button
+                size="icon"
+                className={chat.camOn && permissionsGranted ? overlayBtn : "size-11 rounded-full"}
+                variant={chat.camOn && permissionsGranted ? "default" : "destructive"}
+                onClick={chat.toggleCam}
+                disabled={!permissionsGranted}
+                aria-label="Toggle camera"
+              >
+                {chat.camOn && permissionsGranted ? <Video className="size-5" /> : <VideoOff className="size-5" />}
+              </Button>
+              <Button
+                size="icon"
+                className={overlayBtn}
+                onClick={() => void chat.switchCamera()}
+                disabled={chat.isSwitchingCamera}
+                aria-label="Switch front or rear camera"
+              >
+                <SwitchCamera className={`size-5 ${chat.isSwitchingCamera ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+
+
+            {/* top-right: start / exit */}
+            <div className="absolute right-3 top-3">
               {!permissionsGranted ? (
-                <Button
-                  className="glow-ring h-14 rounded-full px-6 text-base font-bold"
-                  onClick={allowDevices}
-                >
-                  <Video className="size-5" /> Allow camera &amp; mic
+                <Button className="h-11 rounded-full px-5" onClick={allowDevices}>
+                  <Video className="size-4" /> Allow camera
                 </Button>
               ) : !running ? (
-                <>
-                  <Button
-                    size="icon"
-                    className={`${deviceBtn} bg-background/70 hover:bg-background/90`}
-                    onClick={chat.toggleMic}
-                    aria-label="Toggle microphone"
-                  >
-                    {chat.micOn ? <Mic className="size-5" /> : <MicOff className="size-5" />}
-                  </Button>
-                  <Button
-                    size="icon"
-                    className={`${deviceBtn} bg-background/70 hover:bg-background/90`}
-                    onClick={chat.toggleCam}
-                    aria-label="Toggle camera"
-                  >
-                    {chat.camOn ? <Video className="size-5" /> : <VideoOff className="size-5" />}
-                  </Button>
-                  <Button
-                    size="icon"
-                    className={`${deviceBtn} bg-background/70 hover:bg-background/90`}
-                    onClick={() => void chat.switchCamera()}
-                    disabled={chat.isSwitchingCamera}
-                    aria-label="Switch front or rear camera"
-                  >
-                    <SwitchCamera className={`size-5 ${chat.isSwitchingCamera ? "animate-spin" : ""}`} />
-                  </Button>
-                  <Button
-                    className="glow-ring h-14 rounded-full bg-gradient-to-r from-primary to-pink px-7 text-base font-bold text-primary-foreground"
-                    onClick={startChat}
-                  >
-                    <Play className="size-5" /> Start
-                  </Button>
-                </>
+                <Button
+                  className="glow-ring h-11 rounded-full px-5"
+                  onClick={() =>
+                    chat.start({
+                      interests,
+                      wantGender: wantGender !== ANY ? wantGender : null,
+                      wantCountry: wantCountry !== ANY ? wantCountry : null,
+                    })
+                  }
+                >
+                  <Play className="size-4" /> Start
+                </Button>
               ) : (
-                <>
-                  <Button
-                    size="icon"
-                    className={`${deviceBtn} ${chat.micOn ? "bg-background/70 hover:bg-background/90" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}`}
-                    onClick={chat.toggleMic}
-                    aria-label="Toggle microphone"
-                  >
-                    {chat.micOn ? <Mic className="size-5" /> : <MicOff className="size-5" />}
-                  </Button>
-                  <Button
-                    size="icon"
-                    className={`${deviceBtn} ${chat.camOn ? "bg-background/70 hover:bg-background/90" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}`}
-                    onClick={chat.toggleCam}
-                    aria-label="Toggle camera"
-                  >
-                    {chat.camOn ? <Video className="size-5" /> : <VideoOff className="size-5" />}
-                  </Button>
-                  <Button
-                    size="icon"
-                    className={`${deviceBtn} bg-background/70 hover:bg-background/90`}
-                    onClick={() => void chat.switchCamera()}
-                    disabled={chat.isSwitchingCamera}
-                    aria-label="Switch front or rear camera"
-                  >
-                    <SwitchCamera className={`size-5 ${chat.isSwitchingCamera ? "animate-spin" : ""}`} />
-                  </Button>
-                  <Button
-                    size="icon"
-                    className={`${deviceBtn} bg-background/70 hover:bg-background/90 ${chatOpen ? "ring-2 ring-primary" : ""}`}
-                    onClick={() => setChatOpen((open) => !open)}
-                    aria-label="Open text chat"
-                  >
-                    <MessageSquare className="size-5" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="size-14 shrink-0 rounded-full shadow-lg shadow-destructive/40"
-                    onClick={() => {
-                      setChatOpen(false);
-                      chat.stop();
-                    }}
-                    aria-label="End call"
-                  >
-                    <PhoneOff className="size-6" />
-                  </Button>
-                  <Button
-                    className="h-14 shrink-0 rounded-full bg-gradient-to-r from-primary to-pink px-5 text-sm font-bold text-primary-foreground"
-                    onClick={() => {
-                      setChatOpen(false);
-                      chat.next();
-                    }}
-                    aria-label="Next person"
-                  >
-                    <SkipForward className="size-5" /> Next
-                  </Button>
-                </>
+                <Button variant="destructive" className="h-11 rounded-full px-5" onClick={() => chat.stop()}>
+                  <LogOut className="size-4" /> Exit
+                </Button>
               )}
             </div>
+
+            {/* messages overlay */}
+            <div
+              ref={scrollRef}
+              className="absolute inset-x-3 bottom-20 flex max-h-[45%] flex-col items-end gap-1.5 overflow-y-auto"
+            >
+              {chat.messages.slice(-30).map((m) => {
+                const mine = m.sender_id === user?.id;
+                return (
+                  <div key={m.id} className="flex max-w-[85%] flex-col items-end">
+                    <span className="text-[10px] text-foreground/80 drop-shadow">
+                      {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}{" "}
+                      <span className="font-semibold">{mine ? "You" : chat.partner?.display_name ?? "Stranger"}</span>
+                    </span>
+                    {m.message_type === "gif" && m.media_url ? (
+                      <img
+                        src={m.media_url}
+                        alt="Shared GIF"
+                        loading="lazy"
+                        className="max-h-20 w-auto max-w-[8rem] rounded-xl border border-border/40 object-contain shadow-md"
+                      />
+                    ) : (
+                      <span
+                        className={
+                          mine
+                            ? "rounded-2xl bg-primary px-3 py-1.5 text-sm text-primary-foreground"
+                            : "rounded-2xl bg-background/70 px-3 py-1.5 text-sm backdrop-blur"
+                        }
+                      >
+                        {m.body}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              {chat.partnerTyping && (
+                <span className="rounded-full bg-background/70 px-3 py-1 text-xs italic backdrop-blur">
+                  typing…
+                </span>
+              )}
+            </div>
+
+            {/* input bar */}
+            <form onSubmit={handleSend} className="absolute inset-x-3 bottom-3 flex items-center gap-1.5">
+              <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+                <PopoverTrigger asChild>
+                  <Button type="button" size="icon" variant="outline" className="size-12 shrink-0 rounded-full bg-background/70 backdrop-blur" disabled={!connected} aria-label="Add emoji">
+                    <Smile className="size-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-64 p-2">
+                  <div className="grid grid-cols-5 gap-1" aria-label="Emoji picker">
+                    {EMOJIS.map((emoji) => (
+                      <Button key={emoji} type="button" variant="ghost" size="icon" className="text-xl" onClick={() => insertEmoji(emoji)}>
+                        {emoji}
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Popover open={gifOpen} onOpenChange={setGifOpen}>
+                <PopoverTrigger asChild>
+                  <Button type="button" size="icon" variant="outline" className="size-12 shrink-0 rounded-full bg-background/70 backdrop-blur" disabled={!connected} aria-label="Send a GIF">
+                    <ImageIcon className="size-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-[min(22rem,calc(100vw-1.5rem))] p-3">
+                  <form
+                    className="mb-3 flex gap-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      setGifSearchTerm(gifQuery.trim());
+                    }}
+                  >
+                    <Input value={gifQuery} onChange={(event) => setGifQuery(event.target.value)} placeholder="Search GIFs" maxLength={60} />
+                    <Button type="submit" size="icon" aria-label="Search GIFs"><Search className="size-4" /></Button>
+                  </form>
+                  <div className="grid max-h-52 grid-cols-3 gap-1.5 overflow-y-auto">
+                    {gifsLoading ? (
+                      <div className="col-span-3 flex h-32 items-center justify-center"><Loader2 className="size-5 animate-spin text-primary" /></div>
+                    ) : gifResults?.error ? (
+                      <p className="col-span-3 py-8 text-center text-sm text-muted-foreground">{gifResults.error}</p>
+                    ) : gifResults?.gifs.length ? (
+                      gifResults.gifs.map((gif) => (
+                        <Button key={gif.id} type="button" variant="ghost" className="h-20 overflow-hidden rounded-lg p-0" disabled={sendingGif === gif.url} onClick={() => void sendGif(gif.url)} aria-label="Send this GIF">
+                          <img src={gif.url} alt="GIF result" loading="lazy" className="size-full object-cover" />
+                        </Button>
+                      ))
+                    ) : (
+                      <p className="col-span-3 py-8 text-center text-sm text-muted-foreground">No GIFs found</p>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Input
+                ref={messageInputRef}
+                value={draft}
+                onChange={(e) => {
+                  setDraft(e.target.value);
+                  chat.sendTyping();
+                }}
+                placeholder={connected ? "Say something…" : "Chat opens when connected"}
+                disabled={!connected}
+                maxLength={500}
+                className="h-12 min-w-0 flex-1 rounded-full border-border/50 bg-background/60 px-4 backdrop-blur"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                className="size-12 shrink-0 rounded-full"
+                disabled={!connected || !draft.trim()}
+                aria-label="Send"
+              >
+                <Send className="size-5" />
+              </Button>
+            </form>
           </section>
         </div>
       </main>
