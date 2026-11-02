@@ -220,6 +220,20 @@ function RoomPage() {
                 camOn={meta?.cam_on ?? true}
                 micOn={meta?.mic_on ?? true}
                 avatar={meta?.avatar_url ?? null}
+                action={
+                  room.isHost ? (
+                    <button
+                      type="button"
+                      aria-label={meta?.mic_on ? "Mute their mic" : "Give them the mic"}
+                      onClick={() => room.hostSetMic(peerId, meta?.mic_on ?? true)}
+                      className={`flex size-8 items-center justify-center rounded-full border bg-background/80 backdrop-blur ${
+                        meta?.mic_on ? "border-border text-foreground" : "border-primary text-primary"
+                      }`}
+                    >
+                      {meta?.mic_on ? <Mic className="size-3.5" /> : <MicOff className="size-3.5" />}
+                    </button>
+                  ) : undefined
+                }
               />
             );
           })}
