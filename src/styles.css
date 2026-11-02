@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system: "late-night neon" — near-black surfaces, electric neon-cyan
- * signal color, neon pink as the secondary glow. All colors are oklch tokens.
+ * Design system: "late-night static" — near-black surfaces, electric lime
+ * signal color, warm ember for danger. All colors are oklch tokens.
  */
 
 @theme inline {
@@ -42,8 +42,6 @@
   --color-surface: var(--surface);
   --color-signal: var(--signal);
   --color-signal-foreground: var(--signal-foreground);
-  --color-pink: var(--pink);
-  --color-pink-foreground: var(--pink-foreground);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -68,36 +66,34 @@
   --card-foreground: oklch(0.96 0.005 250);
   --popover: oklch(0.19 0.014 265);
   --popover-foreground: oklch(0.96 0.005 250);
-  --primary: oklch(0.82 0.15 195);
-  --primary-foreground: oklch(0.2 0.04 220);
-  --signal: oklch(0.82 0.15 195);
-  --signal-foreground: oklch(0.2 0.04 220);
-  --pink: oklch(0.72 0.22 335);
-  --pink-foreground: oklch(0.2 0.05 335);
+  --primary: oklch(0.86 0.21 128);
+  --primary-foreground: oklch(0.18 0.03 130);
+  --signal: oklch(0.86 0.21 128);
+  --signal-foreground: oklch(0.18 0.03 130);
   --secondary: oklch(0.27 0.017 265);
   --secondary-foreground: oklch(0.96 0.005 250);
   --muted: oklch(0.26 0.015 265);
   --muted-foreground: oklch(0.7 0.017 260);
-  --accent: oklch(0.32 0.06 335);
-  --accent-foreground: oklch(0.95 0.01 335);
+  --accent: oklch(0.72 0.17 45);
+  --accent-foreground: oklch(0.18 0.03 45);
   --destructive: oklch(0.62 0.22 22);
   --destructive-foreground: oklch(0.98 0.005 250);
   --border: oklch(0.31 0.017 265);
   --input: oklch(0.3 0.017 265);
-  --ring: oklch(0.82 0.15 195);
-  --chart-1: oklch(0.82 0.15 195);
-  --chart-2: oklch(0.72 0.22 335);
+  --ring: oklch(0.86 0.21 128);
+  --chart-1: oklch(0.86 0.21 128);
+  --chart-2: oklch(0.72 0.17 45);
   --chart-3: oklch(0.7 0.16 230);
   --chart-4: oklch(0.62 0.22 22);
   --chart-5: oklch(0.8 0.13 90);
   --sidebar: oklch(0.19 0.014 265);
   --sidebar-foreground: oklch(0.96 0.005 250);
-  --sidebar-primary: oklch(0.82 0.15 195);
-  --sidebar-primary-foreground: oklch(0.2 0.04 220);
+  --sidebar-primary: oklch(0.86 0.21 128);
+  --sidebar-primary-foreground: oklch(0.18 0.03 130);
   --sidebar-accent: oklch(0.27 0.017 265);
   --sidebar-accent-foreground: oklch(0.96 0.005 250);
   --sidebar-border: oklch(0.31 0.017 265);
-  --sidebar-ring: oklch(0.82 0.15 195);
+  --sidebar-ring: oklch(0.86 0.21 128);
 }
 
 .dark {
@@ -108,19 +104,19 @@
   --card-foreground: oklch(0.96 0.005 250);
   --popover: oklch(0.19 0.014 265);
   --popover-foreground: oklch(0.96 0.005 250);
-  --primary: oklch(0.82 0.15 195);
-  --primary-foreground: oklch(0.2 0.04 220);
+  --primary: oklch(0.86 0.21 128);
+  --primary-foreground: oklch(0.18 0.03 130);
   --secondary: oklch(0.27 0.017 265);
   --secondary-foreground: oklch(0.96 0.005 250);
   --muted: oklch(0.26 0.015 265);
   --muted-foreground: oklch(0.7 0.017 260);
-  --accent: oklch(0.32 0.06 335);
-  --accent-foreground: oklch(0.95 0.01 335);
+  --accent: oklch(0.72 0.17 45);
+  --accent-foreground: oklch(0.18 0.03 45);
   --destructive: oklch(0.62 0.22 22);
   --destructive-foreground: oklch(0.98 0.005 250);
   --border: oklch(0.31 0.017 265);
   --input: oklch(0.3 0.017 265);
-  --ring: oklch(0.82 0.15 195);
+  --ring: oklch(0.86 0.21 128);
 }
 
 @layer base {
@@ -146,14 +142,14 @@
 
 @utility grain {
   background-image:
-    radial-gradient(circle at 15% 10%, oklch(0.82 0.15 195 / 0.09), transparent 45%),
-    radial-gradient(circle at 85% 0%, oklch(0.72 0.22 335 / 0.08), transparent 40%);
+    radial-gradient(circle at 15% 10%, oklch(0.86 0.21 128 / 0.09), transparent 45%),
+    radial-gradient(circle at 85% 0%, oklch(0.72 0.17 45 / 0.08), transparent 40%);
 }
 
 @utility glow-ring {
   box-shadow:
-    0 0 0 1px oklch(0.82 0.15 195 / 0.35),
-    0 0 40px -12px oklch(0.82 0.15 195 / 0.55);
+    0 0 0 1px oklch(0.86 0.21 128 / 0.35),
+    0 0 40px -12px oklch(0.86 0.21 128 / 0.55);
 }
 
 @keyframes like-pop {
