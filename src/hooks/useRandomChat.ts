@@ -46,7 +46,7 @@ export type Preferences = {
   wantCountry: string | null;
 };
 
-const ICE_SERVERS: RTCConfiguration = {
+export const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
     {
       urls: [
