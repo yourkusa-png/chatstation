@@ -112,6 +112,7 @@ export function useRandomChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [partnerTyping, setPartnerTyping] = useState(false);
   const [likesReceived, setLikesReceived] = useState(0);
+  const [giftReceived, setGiftReceived] = useState<{ gift: string; seq: number } | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [camOn, setCamOn] = useState(true);
@@ -321,6 +322,7 @@ export function useRandomChat() {
       keepSearchingRef.current = true;
       setMessages([]);
       setLikesReceived(0);
+      setGiftReceived(null);
       setStatus("searching");
       try {
         const matchId = await tryJoinQueue();
@@ -342,6 +344,7 @@ export function useRandomChat() {
     setPartner(null);
     setMessages([]);
     setLikesReceived(0);
+    setGiftReceived(null);
     await supabase.rpc("leave_queue");
     if (current) await supabase.rpc("end_match", { p_match_id: current.id });
     stopMedia();
@@ -356,6 +359,7 @@ export function useRandomChat() {
     setPartner(null);
     setMessages([]);
     setLikesReceived(0);
+    setGiftReceived(null);
     await supabase.rpc("leave_queue");
     if (current) await supabase.rpc("end_match", { p_match_id: current.id });
     stopMedia();
@@ -369,6 +373,7 @@ export function useRandomChat() {
     setPartner(null);
     setMessages([]);
     setLikesReceived(0);
+    setGiftReceived(null);
     if (current) await supabase.rpc("end_match", { p_match_id: current.id });
     keepSearchingRef.current = true;
     setStatus("searching");
@@ -419,6 +424,10 @@ export function useRandomChat() {
 
   const sendLike = useCallback(() => {
     signalRef.current?.send({ type: "broadcast", event: "like", payload: {} });
+  }, []);
+
+  const sendGift = useCallback((gift: string) => {
+    signalRef.current?.send({ type: "broadcast", event: "gift", payload: { gift } });
   }, []);
 
   /* ------------------------------------------------- watch for a match while queued */
@@ -616,6 +625,10 @@ export function useRandomChat() {
       .on("broadcast", { event: "like" }, () => {
         setLikesReceived((n) => n + 1);
       })
+      .on("broadcast", { event: "gift" }, ({ payload }) => {
+        const gift = (payload as { gift?: string }).gift ?? "🎁";
+        setGiftReceived((prev) => ({ gift, seq: (prev?.seq ?? 0) + 1 }));
+      })
       .on("broadcast", { event: "typing" }, () => {
         setPartnerTyping(true);
         if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
@@ -710,6 +723,7 @@ export function useRandomChat() {
     messages,
     partnerTyping,
     likesReceived,
+    giftReceived,
     localStream,
     remoteStream,
     camOn,
@@ -728,6 +742,7 @@ export function useRandomChat() {
     sendGif,
     sendTyping,
     sendLike,
+    sendGift,
     toggleCam,
     toggleMic,
     switchCamera,
