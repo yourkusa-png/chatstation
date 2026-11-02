@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { useOnlineCount } from "@/hooks/useOnlineCount";
+import { useOnlineUsers, type OnlineUser } from "@/hooks/useOnlineUsers";
 import { LiveRoomsSection } from "@/components/LiveRoomsSection";
+import { getAvatarUrl } from "@/lib/avatars";
 import {
   Video, VideoOff, Mic, MicOff, RefreshCw, Zap, Loader2, Headphones, Radio, MessageSquare,
 } from "lucide-react";
@@ -52,8 +53,7 @@ export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
     if (camOn) start(next);
   }
 
-
-  const online = useOnlineCount();
+  const { users: onlineUsers, count: online } = useOnlineUsers();
   const Cta = ({ children, className }: { children: React.ReactNode; className: string }) =>
     signedIn ? (
       <Link to="/chat" onClick={stop} className={className}>{children}</Link>
@@ -70,7 +70,7 @@ export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
         <div className="grid grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1 text-sm font-semibold">
           {(["video", "audio"] as const).map((m) => (
             <button key={m} type="button" onClick={() => { if (m === "audio") stop(); setMode(m); }}
-              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition-all ${mode === m ? "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground"}`}>
+              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition-colors ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
               {m === "video" ? <><Video className="size-4" /> Video Call</> : <><Mic className="size-4" /> Audio Call</>}
             </button>
           ))}
@@ -80,7 +80,7 @@ export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
           <video ref={videoRef} autoPlay muted playsInline
             className={`absolute inset-0 size-full object-cover ${facing === "user" ? "-scale-x-100" : ""} ${camOn && mode === "video" ? "" : "hidden"}`} />
           {!(camOn && mode === "video") && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-primary/20 via-surface to-accent/20 px-6 text-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
               {mode === "video" ? <Video className="size-9 text-primary" /> : <Headphones className="size-9 text-primary" />}
               <h1 className="text-xl font-bold">{mode === "video" ? "Meet someone new." : "Talk with your voice."}</h1>
               {mode === "video" && (
@@ -90,11 +90,10 @@ export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
               )}
             </div>
           )}
-          <div className="absolute inset-x-3 top-3 flex items-center justify-between">
+          <div className="absolute inset-x-3 top-3">
             <span className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground">
               <span className="size-1.5 animate-pulse rounded-full bg-destructive-foreground" /> LIVE
             </span>
-            <span className="rounded-md bg-background/70 px-2 py-0.5 text-xs font-semibold backdrop-blur-md">Auto HD</span>
           </div>
           {mode === "video" && (
             <div className="absolute bottom-3 left-3 flex gap-2">
@@ -111,7 +110,7 @@ export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
 
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Cta className={`${pill} border-border bg-card`}><MessageSquare className="size-4" /> Start Chat</Cta>
-          <Cta className={`${pill} glow-ring border-primary bg-gradient-to-r from-primary to-accent text-primary-foreground`}><Zap className="size-4" /> Instant Match</Cta>
+          <Cta className={`${pill} border-primary bg-primary text-primary-foreground`}><Zap className="size-4" /> Instant Match</Cta>
         </div>
         <p className="mt-2 text-center text-xs text-muted-foreground">{signedIn ? "Free · Skip anytime" : "One tap with Google · Free"} · 18+ only</p>
 
@@ -119,14 +118,21 @@ export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
           <h2 className="flex items-center gap-2 text-lg font-bold"><Radio className="size-5 text-destructive" /> People Online</h2>
           <span className="text-xs text-muted-foreground">{online} online now</span>
         </div>
-        <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-          {AVATARS.map((e, k) => (
-            <div key={k} className="relative flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-accent/70 bg-gradient-to-br from-primary/30 to-accent/30 text-2xl">
-              {e}
-              <span className="absolute -bottom-1 rounded bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">LIVE</span>
-            </div>
-          ))}
-        </div>
+        {!signedIn ? (
+          <p className="mt-3 rounded-2xl border border-border bg-card p-4 text-center text-sm text-muted-foreground">
+            Sign in to see who's online right now.
+          </p>
+        ) : onlineUsers.length === 0 ? (
+          <p className="mt-3 rounded-2xl border border-border bg-card p-4 text-center text-sm text-muted-foreground">
+            Nobody else is online right now — check back soon.
+          </p>
+        ) : (
+          <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+            {onlineUsers.map((u) => (
+              <OnlineAvatar key={u.id} user={u} />
+            ))}
+          </div>
+        )}
 
         <LiveRoomsSection signedIn={signedIn} busy={busy} onGoogle={onGoogle} />
       </div>
@@ -134,7 +140,30 @@ export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
   );
 }
 
-const AVATARS = ["😎", "🎧", "🌸", "🎮", "🌙", "⚡", "🎤"];
+function OnlineAvatar({ user }: { user: OnlineUser }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void getAvatarUrl(user.avatar_url).then((u) => {
+      if (!cancelled) setUrl(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user.avatar_url]);
+  return (
+    <div className="relative flex size-14 shrink-0 items-center justify-center">
+      <div className="flex size-14 items-center justify-center overflow-hidden rounded-full border-2 border-accent/70 bg-surface">
+        {url ? (
+          <img src={url} alt="" className="size-full object-cover" />
+        ) : (
+          <span className="text-lg font-bold text-primary">{user.display_name.charAt(0).toUpperCase() || "?"}</span>
+        )}
+      </div>
+      <span className="absolute -bottom-1 rounded bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">LIVE</span>
+    </div>
+  );
+}
 
 function RoundBtn({ children, label, active, onClick }: { children: React.ReactNode; label: string; active: boolean; onClick: () => void }) {
   return (
