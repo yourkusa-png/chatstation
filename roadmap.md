@@ -12,3 +12,8 @@
 - [ ] Verify the upgraded chat experience on mobile and desktop.
 - [x] Real live online counter (header + home)
 - [x] Hero: smooth gradient, light motion, better mobile CTA
+- [x] Real Live Rooms: create room (title/emoji/category), join, host leave/end, mesh WebRTC video tiles, realtime room chat (rooms, room_members, room_messages tables + RLS)
+- [x] Profile photo upload (private avatars bucket, signed URLs, client resize) + bio field
+- [x] Homepage: clean segmented Video/Audio toggle, Live Rooms section replaces placeholders
+- [ ] Verify signed-in room create/join/leave and profile photo save in a real two-user session
+- [ ] Room thumbnail image upload (currently emoji picker)
