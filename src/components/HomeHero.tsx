@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
 import {
-  Video, VideoOff, Mic, MicOff, RefreshCw, Zap, Loader2, Headphones, Users, Radio, ChevronRight,
+  Video, VideoOff, Mic, MicOff, RefreshCw, Zap, Loader2, Headphones, Users, Radio, MessageSquare,
 } from "lucide-react";
 
 type Props = {
@@ -56,117 +57,105 @@ export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
     if (camOn) start(next);
   }
 
-  const ctaClass =
-    "glow-ring cta-breathe flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-accent text-base font-extrabold uppercase tracking-wide text-primary-foreground disabled:opacity-60";
+
+  const online = useOnlineCount();
+  const Cta = ({ children, className }: { children: React.ReactNode; className: string }) =>
+    signedIn ? (
+      <Link to="/chat" onClick={stop} className={className}>{children}</Link>
+    ) : (
+      <button type="button" onClick={onGoogle} disabled={busy} className={className}>
+        {busy ? <Loader2 className="size-4 animate-spin" /> : null}{children}
+      </button>
+    );
+  const pill = "flex h-11 items-center justify-center gap-2 rounded-2xl border text-sm font-semibold disabled:opacity-60";
 
   return (
-    <section className="border-b border-border">
-      <div className="mx-auto w-full max-w-md px-4 pb-8 pt-4 sm:max-w-xl">
+    <section>
+      <div className="mx-auto w-full max-w-md px-4 pb-8 pt-3 sm:max-w-xl">
         <div className="grid grid-cols-2 gap-2 text-sm font-semibold">
           {(["video", "audio"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              className={`flex items-center justify-center gap-2 rounded-full border py-2.5 transition-colors ${mode === m ? "glow-ring border-primary text-primary" : "border-border text-muted-foreground"}`}
-            >
-              {m === "video" ? <><Zap className="size-4" /> 1-on-1 Video</> : <><Mic className="size-4" /> Audio Rooms</>}
+            <button key={m} type="button" onClick={() => { if (m === "audio") stop(); setMode(m); }}
+              className={`flex items-center justify-center gap-2 rounded-2xl border py-2.5 transition-colors ${mode === m ? "border-primary/60 bg-card text-foreground" : "border-border text-muted-foreground"}`}>
+              {m === "video" ? <><Video className="size-4 text-destructive" /> Video Call</> : <><Mic className="size-4" /> Audio Call</>}
             </button>
           ))}
         </div>
 
-        {mode === "video" ? (
-          <>
-            <div className="glow-ring relative mt-4 aspect-[4/3] overflow-hidden rounded-3xl border-2 border-primary/60 bg-surface">
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                className={`absolute inset-0 size-full object-cover ${facing === "user" ? "-scale-x-100" : ""} ${camOn ? "" : "hidden"}`}
-              />
-              {!camOn && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-primary/20 via-surface to-accent/20 px-6 text-center">
-                  <h1 className="text-2xl font-bold">Meet someone new.</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {camError ? "Camera permission blocked. Allow it in browser settings." : "Check your camera before you match."}
-                  </p>
-                  <button type="button" onClick={() => start()} className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">
-                    Turn on camera preview
-                  </button>
-                </div>
-              )}
-              <div className="absolute inset-x-3 top-3 flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-background/70 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-                  <span className="size-2 animate-pulse rounded-full bg-destructive" /> LIVE
-                </span>
-                <span className="rounded-full bg-background/70 px-3 py-1 text-xs font-semibold backdrop-blur-md">HD</span>
-              </div>
-              <div className="absolute inset-x-0 bottom-3 flex justify-center gap-3">
-                <RoundBtn label={camOn ? "Camera off" : "Camera on"} active={camOn} onClick={toggleCam}>
-                  {camOn ? <Video className="size-5" /> : <VideoOff className="size-5" />}
-                </RoundBtn>
-                <RoundBtn label={micOn ? "Mute mic" : "Unmute mic"} active={micOn} onClick={() => setMicOn((v) => !v)}>
-                  {micOn ? <Mic className="size-5" /> : <MicOff className="size-5" />}
-                </RoundBtn>
-                <RoundBtn label="Flip camera" active={false} onClick={flip}>
-                  <RefreshCw className="size-5" />
-                </RoundBtn>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              {signedIn ? (
-                <Link to="/chat" onClick={stop} className={ctaClass}>
-                  <Zap className="size-5" /> Start Instant Match
-                </Link>
-              ) : (
-                <button type="button" onClick={onGoogle} disabled={busy} className={ctaClass}>
-                  {busy ? <Loader2 className="size-5 animate-spin" /> : <Zap className="size-5" />} Start Instant Match
+        <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-3xl border border-border bg-surface">
+          <video ref={videoRef} autoPlay muted playsInline
+            className={`absolute inset-0 size-full object-cover ${facing === "user" ? "-scale-x-100" : ""} ${camOn && mode === "video" ? "" : "hidden"}`} />
+          {!(camOn && mode === "video") && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-primary/20 via-surface to-accent/20 px-6 text-center">
+              {mode === "video" ? <Video className="size-9 text-primary" /> : <Headphones className="size-9 text-primary" />}
+              <h1 className="text-xl font-bold">{mode === "video" ? "Meet someone new." : "Talk with your voice."}</h1>
+              {mode === "video" && (
+                <button type="button" onClick={() => start()} className="rounded-full border border-primary px-4 py-1.5 text-xs font-semibold text-primary">
+                  {camError ? "Allow camera in settings" : "Check your camera"}
                 </button>
               )}
-              <p className="mt-2 text-center text-xs text-muted-foreground">
-                {signedIn ? "Free · Skip anytime" : "One tap with Google · Free"} · 18+ only
-              </p>
             </div>
-          </>
-        ) : (
-          <div className="mt-4 rounded-3xl border border-border bg-card p-6 text-center">
-            <Headphones className="mx-auto size-10 text-primary" />
-            <h1 className="mt-3 text-2xl font-bold">Talk with your voice.</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Voice-only rooms for 5–6 people are coming soon.</p>
+          )}
+          <div className="absolute inset-x-3 top-3 flex items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground">
+              <span className="size-1.5 animate-pulse rounded-full bg-destructive-foreground" /> LIVE
+            </span>
+            <span className="rounded-md bg-background/70 px-2 py-0.5 text-xs font-semibold backdrop-blur-md">Auto HD</span>
           </div>
-        )}
+          {mode === "video" && (
+            <div className="absolute bottom-3 left-3 flex gap-2">
+              <RoundBtn label={camOn ? "Camera off" : "Camera on"} active={camOn} onClick={toggleCam}>
+                {camOn ? <Video className="size-4" /> : <VideoOff className="size-4" />}
+              </RoundBtn>
+              <RoundBtn label={micOn ? "Mute mic" : "Unmute mic"} active={micOn} onClick={() => setMicOn((v) => !v)}>
+                {micOn ? <Mic className="size-4" /> : <MicOff className="size-4" />}
+              </RoundBtn>
+              <RoundBtn label="Flip camera" active={false} onClick={flip}><RefreshCw className="size-4" /></RoundBtn>
+            </div>
+          )}
+        </div>
 
-        <div className="mt-8">
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-lg font-bold">
-              <Headphones className="size-5 text-primary" /> Popular Audio Lounges
-            </h2>
-            <span className="rounded-full border border-primary/50 px-3 py-1 text-xs font-semibold text-primary">Coming soon</span>
-          </div>
-          <div className="mt-3 grid gap-3">
-            {LOUNGES.map((r) => (
-              <div key={r.title} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
-                <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 to-accent/30 text-2xl">
-                  {r.emoji}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1 truncate font-semibold">{r.title} <ChevronRight className="size-4 text-muted-foreground" /></p>
-                  <p className="truncate text-xs text-primary/80">{r.tags}</p>
-                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><Users className="size-3" /> Up to 6 people · Voice only</p>
-                </div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-                  <Radio className="size-3" /> Soon
-                </span>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Cta className={`${pill} border-border bg-card`}><MessageSquare className="size-4" /> Start Chat</Cta>
+          <Cta className={`${pill} glow-ring border-primary bg-gradient-to-r from-primary to-accent text-primary-foreground`}><Zap className="size-4" /> Instant Match</Cta>
+        </div>
+        <p className="mt-2 text-center text-xs text-muted-foreground">{signedIn ? "Free · Skip anytime" : "One tap with Google · Free"} · 18+ only</p>
+
+        <div className="mt-7 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-lg font-bold"><Radio className="size-5 text-destructive" /> People Online</h2>
+          <span className="text-xs text-muted-foreground">{online} online now</span>
+        </div>
+        <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+          {AVATARS.map((e, k) => (
+            <div key={k} className="relative flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-accent/70 bg-gradient-to-br from-primary/30 to-accent/30 text-2xl">
+              {e}
+              <span className="absolute -bottom-1 rounded bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">LIVE</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-7 flex items-center justify-between">
+          <h2 className="text-lg font-bold">Live Rooms</h2>
+        </div>
+        <div className="mt-3 grid gap-3">
+          {LOUNGES.map((r) => (
+            <div key={r.title} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/30 to-accent/30 text-2xl">{r.emoji}</div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">{r.title}</p>
+                <p className="truncate text-xs text-muted-foreground">{r.tags}</p>
               </div>
-            ))}
-          </div>
+              <Cta className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+                <Users className="size-3" /> Join
+              </Cta>
+            </div>
+          ))}
         </div>
       </div>
     </section>
   );
 }
+
+const AVATARS = ["😎", "🎧", "🌸", "🎮", "🌙", "⚡", "🎤"];
 
 function RoundBtn({ children, label, active, onClick }: { children: React.ReactNode; label: string; active: boolean; onClick: () => void }) {
   return (
@@ -174,7 +163,7 @@ function RoundBtn({ children, label, active, onClick }: { children: React.ReactN
       type="button"
       aria-label={label}
       onClick={onClick}
-      className={`flex size-12 items-center justify-center rounded-full border-2 bg-background/70 backdrop-blur-md ${active ? "border-primary text-primary" : "border-border text-foreground"}`}
+      className={`flex size-9 items-center justify-center rounded-full border bg-background/70 backdrop-blur-md ${active ? "border-primary text-primary" : "border-border text-foreground"}`}
     >
       {children}
     </button>
