@@ -300,6 +300,22 @@ function Landing() {
           </Link>
         </div>
       </footer>
+
+      <div className="h-16 sm:hidden" />
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border bg-background/90 backdrop-blur sm:hidden">
+        <Link to="/" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-primary">
+          <Home className="size-5" /> Home
+        </Link>
+        <Link to="/chat" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
+          <Video className="size-5" /> Video
+        </Link>
+        <button type="button" onClick={() => { setMode("audio"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
+          <Headphones className="size-5" /> Rooms
+        </button>
+        <Link to="/profile" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
+          <UserRound className="size-5" /> Profile
+        </Link>
+      </nav>
     </div>
   );
 }
