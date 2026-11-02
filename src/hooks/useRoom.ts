@@ -316,13 +316,10 @@ export function useRoom(roomId: string | undefined) {
         },
       )
       .subscribe((state) => {
-        if (state === "SUBSCRIBED") {
-          void channel.track(metaRef.current);
-          const poll = setInterval(reconcile, 4000);
-          return () => clearInterval(poll);
-        }
-        return undefined;
+        if (state === "SUBSCRIBED") void channel.track(metaRef.current);
       });
+
+    const poll = setInterval(reconcile, 4000);
 
     void supabase
       .from("room_messages")
@@ -335,6 +332,7 @@ export function useRoom(roomId: string | undefined) {
       });
 
     return () => {
+      clearInterval(poll);
       if (channelRef.current) {
         void supabase.removeChannel(channelRef.current);
         channelRef.current = null;
