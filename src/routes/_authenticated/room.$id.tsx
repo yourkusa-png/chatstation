@@ -61,6 +61,7 @@ function Tile({
   camOn,
   micOn,
   avatar,
+  action,
 }: {
   stream: MediaStream | null;
   name: string;
@@ -69,6 +70,7 @@ function Tile({
   camOn: boolean;
   micOn: boolean;
   avatar: string | null;
+  action?: React.ReactNode;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -98,6 +100,7 @@ function Tile({
           <span className="text-xs text-muted-foreground">{camOn ? "Connecting…" : "Camera off"}</span>
         </div>
       )}
+      {action && <div className="absolute right-2 top-2">{action}</div>}
       <div className="absolute inset-x-2 bottom-2 flex items-center gap-1.5">
         <span className="flex min-w-0 items-center gap-1.5 rounded-full bg-background/80 px-2 py-1 text-xs font-semibold backdrop-blur">
           <AvatarImg raw={avatar} name={name} />
