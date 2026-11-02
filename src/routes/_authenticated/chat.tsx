@@ -55,8 +55,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, GENDERS, REPORT_REASONS, countryLabel, genderLabel } from "@/lib/constants";
 
 export const Route = createFileRoute("/_authenticated/chat")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    mode: search.mode === "audio" ? ("audio" as const) : ("video" as const),
+  validateSearch: (search: Record<string, unknown>): { mode?: "audio" | "video" } => ({
+    mode: search["mode"] === "audio" ? "audio" : search["mode"] === "video" ? "video" : undefined,
   }),
   head: () => ({
     meta: [
@@ -366,7 +366,7 @@ function ChatPage() {
               myId={user?.id ?? null}
               connected={connected}
               running={running}
-              statusText={statusText[chat.status]}
+              statusText={statusText[chat.status] ?? "Ready when you are"}
               permissionsGranted={permissionsGranted}
               permissionsDenied={permissionsDenied}
               onAllowDevices={allowDevices}
