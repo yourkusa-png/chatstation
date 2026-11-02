@@ -78,6 +78,7 @@ function ProfilePage() {
       .from("profiles")
       .update({
         display_name: displayName.trim().slice(0, 24) || "Stranger",
+        bio: bio.trim().slice(0, 200),
         gender,
         country,
         interests: interests
@@ -94,6 +95,55 @@ function ProfilePage() {
     }
     await refreshProfile();
     toast.success("Profile saved");
+  }
+
+  async function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose a photo file.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const blob = await fileToAvatarBlob(file);
+      const path = `${user.id}/avatar.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+      if (uploadError) throw uploadError;
+      const reference = `${path}?v=${Date.now()}`;
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: reference })
+        .eq("id", user.id);
+      if (updateError) throw updateError;
+      clearAvatarCache();
+      const url = await getAvatarUrl(reference);
+      setAvatarUrl(url);
+      await refreshProfile();
+      toast.success("Profile photo updated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not upload the photo");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function removeAvatar() {
+    if (!user) return;
+    setUploading(true);
+    try {
+      await supabase.storage.from("avatars").remove([`${user.id}/avatar.jpg`]);
+      await supabase.from("profiles").update({ avatar_url: null }).eq("id", user.id);
+      clearAvatarCache();
+      setAvatarUrl(null);
+      await refreshProfile();
+      toast.success("Profile photo removed");
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
