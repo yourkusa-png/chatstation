@@ -299,7 +299,7 @@ export function useRoom(roomId: string | undefined) {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "rooms", filter: `id=eq.${roomId}` },
-        ({ payload }) => {
+        (payload) => {
           const next = payload.new as RoomRow;
           setRoom(next);
           if (!next.is_live && next.host_id !== userId) {
@@ -311,7 +311,7 @@ export function useRoom(roomId: string | undefined) {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "room_messages", filter: `room_id=eq.${roomId}` },
-        ({ payload }) => {
+        (payload) => {
           setMessages((prev) => [...prev.slice(-200), payload.new as RoomMessage]);
         },
       )

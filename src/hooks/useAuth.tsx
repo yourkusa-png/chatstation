@@ -10,6 +10,7 @@ export type Profile = {
   id: string;
   display_name: string;
   avatar_url: string | null;
+  bio: string;
   gender: string;
   country: string;
   interests: string[];

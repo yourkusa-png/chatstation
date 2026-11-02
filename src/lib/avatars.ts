@@ -13,9 +13,10 @@ export async function getAvatarUrl(raw: string | null | undefined): Promise<stri
   if (cache.has(raw)) return cache.get(raw)!;
   const path = raw.split("?")[0];
   const { data } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60 * 24 * 7);
-  if (!data?.signedUrl) return null;
-  cache.set(raw, data.signedUrl);
-  return data.signedUrl;
+  const signed = data?.signedUrl;
+  if (!signed) return null;
+  cache.set(raw, signed);
+  return signed;
 }
 
 export function clearAvatarCache(raw?: string | null) {
