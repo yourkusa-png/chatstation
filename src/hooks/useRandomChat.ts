@@ -35,6 +35,7 @@ export type ChatMessage = {
 export type PartnerProfile = {
   id: string;
   display_name: string;
+  avatar_url: string | null;
   gender: string;
   country: string;
   interests: string[];
@@ -44,6 +45,7 @@ export type Preferences = {
   interests: string[];
   wantGender: string | null;
   wantCountry: string | null;
+  mode: "video" | "audio";
 };
 
 export const ICE_SERVERS: RTCConfiguration = {
@@ -148,7 +150,8 @@ export function useRandomChat() {
     };
   }, []);
 
-  const prefsRef = useRef<Preferences>({ interests: [], wantGender: null, wantCountry: null });
+  const prefsRef = useRef<Preferences>({ interests: [], wantGender: null, wantCountry: null, mode: "video" });
+  const modeRef = useRef<"video" | "audio">("video");
   const localStreamRef = useRef<MediaStream | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const signalRef = useRef<RealtimeChannel | null>(null);
@@ -161,19 +164,25 @@ export function useRandomChat() {
 
   const ensureMedia = useCallback(async () => {
     if (localStreamRef.current) return localStreamRef.current;
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { ...VIDEO_SIZE, facingMode: { ideal: facingMode } },
-      audio: { echoCancellation: true, noiseSuppression: true },
-    });
+    const audio = { echoCancellation: true, noiseSuppression: true };
+    const stream =
+      modeRef.current === "audio"
+        ? await navigator.mediaDevices.getUserMedia({ audio })
+        : await navigator.mediaDevices.getUserMedia({
+            video: { ...VIDEO_SIZE, facingMode: { ideal: facingMode } },
+            audio,
+          });
     localStreamRef.current = stream;
     setLocalStream(stream);
-    setCamOn(true);
+    setCamOn(modeRef.current !== "audio");
     setMicOn(true);
     setCamPermission("granted");
     setMicPermission("granted");
 
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    setCameraCount(devices.filter((device) => device.kind === "videoinput").length);
+    if (modeRef.current !== "audio") {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      setCameraCount(devices.filter((device) => device.kind === "videoinput").length);
+    }
     return stream;
   }, [facingMode]);
 
@@ -296,6 +305,7 @@ export function useRandomChat() {
       p_interests: prefs.interests,
       p_want_gender: prefs.wantGender as string,
       p_want_country: prefs.wantCountry as string,
+      p_mode: prefs.mode ?? "video",
     });
     if (rpcError) throw new Error(rpcError.message);
     return (data as string | null) ?? null;
@@ -310,6 +320,7 @@ export function useRandomChat() {
     async (prefs: Preferences) => {
       if (!userId) return;
       prefsRef.current = prefs;
+      modeRef.current = prefs.mode ?? "video";
       setError(null);
       setStatus("starting");
       try {
@@ -449,7 +460,7 @@ export function useRandomChat() {
 
     const poll = setInterval(async () => {
       if (!keepSearchingRef.current) return;
-      const { data } = await supabase.rpc("current_match");
+      const { data } = await supabase.rpc("current_match", { p_mode: prefsRef.current.mode ?? "video" });
       if (data) {
         await loadMatch(data as string);
       } else {
@@ -480,7 +491,7 @@ export function useRandomChat() {
 
     void supabase
       .from("profiles")
-      .select("id, display_name, gender, country, interests")
+      .select("id, display_name, avatar_url, gender, country, interests")
       .eq("id", partnerId)
       .maybeSingle()
       .then(({ data }) => {
