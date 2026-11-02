@@ -131,6 +131,7 @@ export type Database = {
         Row: {
           age_confirmed: boolean
           avatar_url: string | null
+          bio: string
           country: string
           created_at: string
           display_name: string
@@ -142,6 +143,7 @@ export type Database = {
         Insert: {
           age_confirmed?: boolean
           avatar_url?: string | null
+          bio?: string
           country?: string
           created_at?: string
           display_name?: string
@@ -153,6 +155,7 @@ export type Database = {
         Update: {
           age_confirmed?: boolean
           avatar_url?: string | null
+          bio?: string
           country?: string
           created_at?: string
           display_name?: string
@@ -201,6 +204,114 @@ export type Database = {
           status?: Database["public"]["Enums"]["report_status"]
         }
         Relationships: []
+      }
+      room_members: {
+        Row: {
+          id: string
+          joined_at: string
+          left_at: string | null
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_members_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          room_id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          room_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          room_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          category: string
+          created_at: string
+          ended_at: string | null
+          host_id: string
+          id: string
+          is_live: boolean
+          max_members: number
+          thumbnail: string
+          title: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          ended_at?: string | null
+          host_id: string
+          id?: string
+          is_live?: boolean
+          max_members?: number
+          thumbnail?: string
+          title?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          ended_at?: string | null
+          host_id?: string
+          id?: string
+          is_live?: boolean
+          max_members?: number
+          thumbnail?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_host_fk"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
