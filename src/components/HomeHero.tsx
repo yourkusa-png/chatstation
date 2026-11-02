@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
+import { LiveRoomsSection } from "@/components/LiveRoomsSection";
 import {
-  Video, VideoOff, Mic, MicOff, RefreshCw, Zap, Loader2, Headphones, Users, Radio, MessageSquare,
+  Video, VideoOff, Mic, MicOff, RefreshCw, Zap, Loader2, Headphones, Radio, MessageSquare,
 } from "lucide-react";
 
 type Props = {
@@ -12,12 +12,6 @@ type Props = {
   mode: "video" | "audio";
   setMode: (m: "video" | "audio") => void;
 };
-
-const LOUNGES = [
-  { title: "Hindi Late Night Talks", tags: "Chill · Friends · Life", emoji: "🌙" },
-  { title: "Music & Chill", tags: "Lo-fi · EDM · Vibes", emoji: "🎧" },
-  { title: "Global Strangers Meet", tags: "Talk · Share · Make Friends", emoji: "🌍" },
-];
 
 export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);

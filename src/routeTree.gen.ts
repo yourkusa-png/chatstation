@@ -17,6 +17,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as TopicsSlugRouteImport } from './routes/topics.$slug'
+import { Route as AuthenticatedRoomIdRouteImport } from './routes/_authenticated/room.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -57,6 +58,11 @@ const TopicsSlugRoute = TopicsSlugRouteImport.update({
   path: '/topics/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRoomIdRoute = AuthenticatedRoomIdRouteImport.update({
+  id: '/room/$id',
+  path: '/room/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof AuthenticatedChatRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/topics/$slug': typeof TopicsSlugRoute
+  '/room/$id': typeof AuthenticatedRoomIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/chat': typeof AuthenticatedChatRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/topics/$slug': typeof TopicsSlugRoute
+  '/room/$id': typeof AuthenticatedRoomIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/topics/$slug': typeof TopicsSlugRoute
+  '/_authenticated/room/$id': typeof AuthenticatedRoomIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/profile'
     | '/topics/$slug'
+    | '/room/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/profile'
     | '/topics/$slug'
+    | '/room/$id'
   id:
     | '__root__'
     | '/'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chat'
     | '/_authenticated/profile'
     | '/topics/$slug'
+    | '/_authenticated/room/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TopicsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/room/$id': {
+      id: '/_authenticated/room/$id'
+      path: '/room/$id'
+      fullPath: '/room/$id'
+      preLoaderRoute: typeof AuthenticatedRoomIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -191,12 +210,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedRoomIdRoute: typeof AuthenticatedRoomIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedRoomIdRoute: AuthenticatedRoomIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
