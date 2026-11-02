@@ -36,6 +36,13 @@
       "when": 1793604602912,
       "tag": "0004_online_last_seen",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793606444950,
+      "tag": "0005_follows_and_audio_call_mode",
+      "breakpoints": true
     }
   ]
 }

@@ -20,6 +20,8 @@ import {
   LogOut,
   Smile,
   Gift,
+  UserPlus,
+  UserCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -48,10 +50,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SiteHeader } from "@/components/SiteHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useRandomChat } from "@/hooks/useRandomChat";
+import { getAvatarUrl } from "@/lib/avatars";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, GENDERS, REPORT_REASONS, countryLabel, genderLabel } from "@/lib/constants";
 
 export const Route = createFileRoute("/_authenticated/chat")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    mode: search.mode === "audio" ? ("audio" as const) : ("video" as const),
+  }),
   head: () => ({
     meta: [
       { title: "Video chat · CHAT STATION" },
@@ -72,6 +78,8 @@ const GIFTS = ["🌹", "❤️", "☕", "🍫", "🍕", "🎉", "👑", "🎁"];
 function ChatPage() {
   const { user, profile, refreshProfile } = useAuth();
   const chat = useRandomChat();
+  const { mode: routeMode } = Route.useSearch();
+  const audioMode = routeMode === "audio";
 
   const localRef = useRef<HTMLVideoElement>(null);
   const remoteRef = useRef<HTMLVideoElement>(null);
@@ -112,6 +120,36 @@ function ChatPage() {
     },
   });
 
+  const { data: followingPartner, refetch: refetchFollowing } = useQuery({
+    queryKey: ["following-partner", user?.id, chat.partner?.id],
+    enabled: !!user && !!chat.partner,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("follows")
+        .select("id", { count: "exact", head: true })
+        .eq("follower_id", user!.id)
+        .eq("followed_id", chat.partner!.id);
+      return (count ?? 0) > 0;
+    },
+  });
+
+  async function toggleFollow() {
+    if (!user || !chat.partner) return;
+    if (followingPartner) {
+      await supabase.from("follows").delete().eq("follower_id", user.id).eq("followed_id", chat.partner.id);
+      toast("Unfollowed");
+    } else {
+      const { error } = await supabase
+        .from("follows")
+        .insert({ follower_id: user.id, followed_id: chat.partner.id });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success(`Following ${chat.partner.display_name}`);
+    }
+    void refetchFollowing();
+  }
 
   useEffect(() => {
     if (localRef.current && chat.localStream) localRef.current.srcObject = chat.localStream;
@@ -220,20 +258,23 @@ function ChatPage() {
     }
   }
 
+  function startCurrent() {
+    return chat.start({
+      interests,
+      wantGender: wantGender !== ANY ? wantGender : null,
+      wantCountry: wantCountry !== ANY ? wantCountry : null,
+      mode: audioMode ? "audio" : "video",
+    });
+  }
+
   // Auto-start matching as soon as the user lands here (1-tap flow).
   const autoStarted = useRef(false);
   useEffect(() => {
     if (autoStarted.current || ban || !profile?.age_confirmed || chat.status !== "idle") return;
     autoStarted.current = true;
-    Promise.resolve(
-      chat.start({
-        interests,
-        wantGender: wantGender !== ANY ? wantGender : null,
-        wantCountry: wantCountry !== ANY ? wantCountry : null,
-      }),
-    ).catch(() => {});
+    Promise.resolve(startCurrent()).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ban, profile?.age_confirmed, chat.status]);
+  }, [ban, profile?.age_confirmed, chat.status, audioMode]);
 
   if (ban) {
     return (
@@ -296,9 +337,9 @@ function ChatPage() {
 
   const running = chat.status !== "idle" && chat.status !== "error";
   const permissionsGranted =
-    chat.camPermission === "granted" &&
     chat.micPermission === "granted" &&
-    Boolean(chat.localStream);
+    Boolean(chat.localStream) &&
+    (audioMode || chat.camPermission === "granted");
   const permissionsDenied = chat.camPermission === "denied" || chat.micPermission === "denied";
 
   async function allowDevices() {
@@ -319,6 +360,20 @@ function ChatPage() {
       <SiteHeader onDisableDevices={chat.disableDevices} onOpenFilters={() => setFiltersOpen(true)} />
       <main className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col sm:py-3">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface sm:rounded-3xl sm:border sm:border-border">
+          {audioMode ? (
+            <AudioView
+              chat={chat}
+              myId={user?.id ?? null}
+              connected={connected}
+              running={running}
+              statusText={statusText[chat.status]}
+              permissionsGranted={permissionsGranted}
+              permissionsDenied={permissionsDenied}
+              onAllowDevices={allowDevices}
+              onStart={() => void startCurrent()}
+            />
+          ) : (
+          <>
           {/* ---------------- stranger (top) ---------------- */}
           <section className="relative min-h-0 flex-1 overflow-hidden bg-background">
             <video ref={remoteRef} autoPlay playsInline className="size-full object-cover" />
@@ -349,13 +404,21 @@ function ChatPage() {
             )}
 
             {connected && chat.partner && (
-              <div className="absolute left-3 top-3 flex max-w-[70%] items-center gap-2 rounded-full border border-border/50 bg-background/60 py-1 pl-1 pr-3 text-xs backdrop-blur">
-                <span className="flex size-8 items-center justify-center rounded-full bg-primary font-display text-sm font-bold text-primary-foreground">
-                  {chat.partner.display_name.slice(0, 1).toUpperCase()}
-                </span>
+              <div className="absolute left-3 top-3 flex max-w-[85%] items-center gap-2 rounded-full border border-border/50 bg-background/60 py-1 pl-1 pr-2 text-xs backdrop-blur">
+                <PartnerImg raw={chat.partner.avatar_url} name={chat.partner.display_name} />
                 <span className="truncate">
                   {chat.partner.display_name} · {countryLabel(chat.partner.country)}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => void toggleFollow()}
+                  className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 font-semibold transition-colors ${
+                    followingPartner ? "bg-primary/20 text-primary" : "bg-primary text-primary-foreground"
+                  }`}
+                >
+                  {followingPartner ? <UserCheck className="size-3.5" /> : <UserPlus className="size-3.5" />}
+                  {followingPartner ? "Following" : "Follow"}
+                </button>
               </div>
             )}
 
@@ -467,13 +530,7 @@ function ChatPage() {
               ) : !running ? (
                 <Button
                   className="glow-ring h-11 rounded-full px-5"
-                  onClick={() =>
-                    chat.start({
-                      interests,
-                      wantGender: wantGender !== ANY ? wantGender : null,
-                      wantCountry: wantCountry !== ANY ? wantCountry : null,
-                    })
-                  }
+                  onClick={() => void startCurrent()}
                 >
                   <Play className="size-4" /> Start
                 </Button>
@@ -593,6 +650,8 @@ function ChatPage() {
               </Button>
             </form>
           </section>
+          </>
+          )}
         </div>
       </main>
 
@@ -711,5 +770,218 @@ function ChatPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function PartnerImg({ raw, name }: { raw: string | null; name: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void getAvatarUrl(raw).then((u) => {
+      if (!cancelled) setUrl(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [raw]);
+  if (url) return <img src={url} alt="" className="size-8 shrink-0 rounded-full object-cover" />;
+  return (
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+      {name.slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
+function AudioPartnerPhoto({ raw, name }: { raw: string | null; name: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void getAvatarUrl(raw).then((u) => {
+      if (!cancelled) setUrl(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [raw]);
+  if (url) return <img src={url} alt="" className="relative size-36 rounded-full border border-border object-cover" />;
+  return (
+    <span className="relative flex size-36 items-center justify-center rounded-full bg-primary/15 text-5xl font-bold text-primary">
+      {name.charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+function AudioView({
+  chat,
+  myId,
+  connected,
+  running,
+  statusText,
+  permissionsGranted,
+  permissionsDenied,
+  onAllowDevices,
+  onStart,
+}: {
+  chat: ReturnType<typeof useRandomChat>;
+  myId: string | null;
+  connected: boolean;
+  running: boolean;
+  statusText: string;
+  permissionsGranted: boolean;
+  permissionsDenied: boolean;
+  onAllowDevices: () => void;
+  onStart: () => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [chat.messages.length, chat.partnerTyping]);
+
+  async function send(e: React.FormEvent) {
+    e.preventDefault();
+    const body = draft;
+    setDraft("");
+    try {
+      await chat.sendMessage(body);
+    } catch {
+      /* hook surfaces the failure through chat.error */
+    }
+  }
+
+  return (
+    <section className="relative flex min-h-0 flex-1 flex-col items-center overflow-hidden bg-background px-6 py-6">
+      <div className="relative mt-4 flex items-center justify-center">
+        <span className={`absolute size-40 animate-pulse rounded-full bg-primary/25 ${connected ? "" : "opacity-40"}`} />
+        {chat.partner?.avatar_url ? (
+          <AudioPartnerPhoto raw={chat.partner.avatar_url} name={chat.partner.display_name} />
+        ) : (
+          <span className="relative flex size-36 items-center justify-center rounded-full bg-primary/15 text-5xl font-bold text-primary">
+            {(chat.partner?.display_name ?? "S").charAt(0).toUpperCase()}
+          </span>
+        )}
+      </div>
+      <p className="mt-6 text-xl font-bold">{chat.partner?.display_name ?? "Stranger"}</p>
+      {chat.partner && <p className="text-sm text-muted-foreground">{countryLabel(chat.partner.country)}</p>}
+      <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+        {!connected && running && <Loader2 className="size-4 animate-spin" />}
+        {statusText}
+      </p>
+
+      {chat.status === "partner-left" && (
+        <Button className="mt-4" onClick={() => chat.next()}>
+          Find someone new
+        </Button>
+      )}
+
+      {permissionsDenied && (
+        <p className="mt-4 flex max-w-xs items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-left text-xs">
+          <ShieldAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
+          Microphone is blocked. Allow it in your browser's site settings, then reload.
+        </p>
+      )}
+
+      {!running && permissionsGranted && (
+        <Button className="mt-4" onClick={onStart}>
+          <Mic className="size-4" /> Start audio call
+        </Button>
+      )}
+      {!permissionsGranted && !running && (
+        <Button className="mt-4" onClick={onAllowDevices}>
+          <Mic className="size-4" /> Allow microphone
+        </Button>
+      )}
+
+      <div
+        ref={scrollRef}
+        className="mt-5 flex max-h-36 w-full max-w-sm flex-col items-end gap-1.5 overflow-y-auto"
+      >
+        {chat.messages.slice(-20).map((m) => {
+          const mine = m.sender_id === myId;
+          return (
+            <div key={m.id} className="flex max-w-[85%] flex-col items-end">
+              {m.message_type === "gif" && m.media_url ? (
+                <img
+                  src={m.media_url}
+                  alt="Shared GIF"
+                  loading="lazy"
+                  className="max-h-16 w-auto max-w-[7rem] rounded-xl border border-border/40 object-contain"
+                />
+              ) : (
+                <span
+                  className={
+                    mine
+                      ? "rounded-2xl bg-primary px-3 py-1.5 text-sm text-primary-foreground"
+                      : "rounded-2xl bg-card px-3 py-1.5 text-sm"
+                  }
+                >
+                  {m.body}
+                </span>
+              )}
+            </div>
+          );
+        })}
+        {chat.partnerTyping && (
+          <span className="rounded-full bg-card px-3 py-1 text-xs italic text-muted-foreground">typing…</span>
+        )}
+      </div>
+
+      <form onSubmit={send} className="mt-3 flex w-full max-w-sm items-center gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            chat.sendTyping();
+          }}
+          placeholder={connected ? "Say something…" : "Chat opens when connected"}
+          disabled={!connected}
+          maxLength={500}
+          className="h-11 min-w-0 flex-1 rounded-full"
+        />
+        <Button
+          type="submit"
+          size="icon"
+          className="size-11 shrink-0 rounded-full"
+          disabled={!connected || !draft.trim()}
+          aria-label="Send"
+        >
+          <Send className="size-4" />
+        </Button>
+      </form>
+
+      <div className="mt-auto flex items-center gap-4 pb-2 pt-4">
+        <button
+          type="button"
+          onClick={chat.toggleMic}
+          aria-label={chat.micOn ? "Mute microphone" : "Unmute microphone"}
+          className={`flex size-14 items-center justify-center rounded-full border ${
+            chat.micOn ? "border-border bg-card" : "border-destructive/60 bg-destructive/20 text-destructive"
+          }`}
+        >
+          {chat.micOn ? <Mic className="size-6" /> : <MicOff className="size-6" />}
+        </button>
+        {running && (
+          <>
+            <button
+              type="button"
+              onClick={() => chat.next()}
+              aria-label="Next person"
+              className="flex size-14 items-center justify-center rounded-full border border-border bg-card"
+            >
+              <SkipForward className="size-6" />
+            </button>
+            <button
+              type="button"
+              onClick={() => void chat.stop()}
+              aria-label="End call"
+              className="flex size-14 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
+            >
+              <LogOut className="size-6" />
+            </button>
+          </>
+        )}
+      </div>
+    </section>
   );
 }

@@ -71,6 +71,18 @@ function ProfilePage() {
     },
   });
 
+  const { data: social } = useQuery({
+    queryKey: ["my-social", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const [{ count: followers }, { count: following }] = await Promise.all([
+        supabase.from("follows").select("id", { count: "exact", head: true }).eq("followed_id", user!.id),
+        supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", user!.id),
+      ]);
+      return { followers: followers ?? 0, following: following ?? 0 };
+    },
+  });
+
   async function save() {
     if (!user) return;
     setSaving(true);
@@ -159,6 +171,14 @@ function ProfilePage() {
           <div className="rounded-xl border border-border bg-card px-5 py-4">
             <p className="text-2xl font-bold">{stats?.chats ?? 0}</p>
             <p className="text-xs text-muted-foreground">Chats so far</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card px-5 py-4">
+            <p className="text-2xl font-bold">{social?.followers ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Followers</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card px-5 py-4">
+            <p className="text-2xl font-bold">{social?.following ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Following</p>
           </div>
           <div className="rounded-xl border border-border bg-card px-5 py-4">
             <p className="text-2xl font-bold">
