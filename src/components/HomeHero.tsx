@@ -1,140 +1,80 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useOnlineUsers, type OnlineUser } from "@/hooks/useOnlineUsers";
 import { LiveRoomsSection } from "@/components/LiveRoomsSection";
 import { getAvatarUrl } from "@/lib/avatars";
-import {
-  Video, VideoOff, Mic, MicOff, RefreshCw, Zap, Loader2, Headphones, Radio, MessageSquare,
-} from "lucide-react";
+import { Video, Mic, Loader2, ChevronRight } from "lucide-react";
 
 type Props = {
   signedIn: boolean;
   busy: boolean;
   onGoogle: () => void;
-  mode: "video" | "audio";
-  setMode: (m: "video" | "audio") => void;
+  mode?: "video" | "audio";
+  setMode?: (m: "video" | "audio") => void;
 };
 
-export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [camOn, setCamOn] = useState(false);
-  const [micOn, setMicOn] = useState(true);
-  const [facing, setFacing] = useState<"user" | "environment">("user");
-  const [camError, setCamError] = useState(false);
-
-  function stop() {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-  }
-
-  async function start(face = facing) {
-    stop();
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: face }, audio: false });
-      streamRef.current = s;
-      if (videoRef.current) videoRef.current.srcObject = s;
-      setCamOn(true);
-      setCamError(false);
-    } catch {
-      setCamOn(false);
-      setCamError(true);
-    }
-  }
-
-  useEffect(() => () => stop(), []);
-
-  function toggleCam() {
-    if (camOn) { stop(); setCamOn(false); } else start();
-  }
-  function flip() {
-    const next = facing === "user" ? "environment" : "user";
-    setFacing(next);
-    if (camOn) start(next);
-  }
-
+export function HomeHero({ signedIn, busy, onGoogle }: Props) {
   const { users: onlineUsers, count: online } = useOnlineUsers();
-  const Cta = ({ children, className }: { children: React.ReactNode; className: string }) =>
-    signedIn ? (
-      <Link to="/chat" onClick={stop} className={className}>{children}</Link>
-    ) : (
-      <button type="button" onClick={onGoogle} disabled={busy} className={className}>
-        {busy ? <Loader2 className="size-4 animate-spin" /> : null}{children}
-      </button>
-    );
-  const pill = "flex h-11 items-center justify-center gap-2 rounded-2xl border text-sm font-semibold disabled:opacity-60";
+
+  const card =
+    "flex w-full items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:bg-secondary disabled:opacity-60";
+
+  const videoInner = (
+    <>
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+        {busy ? <Loader2 className="size-5 animate-spin" /> : <Video className="size-5" />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-base font-semibold">Instant Video Match</span>
+        <span className="block text-xs text-muted-foreground">1-on-1 video with a random person</span>
+      </span>
+      <ChevronRight className="size-5 text-muted-foreground" />
+    </>
+  );
 
   return (
     <section>
-      <div className="mx-auto w-full max-w-md px-4 pb-8 pt-3 sm:max-w-xl">
-        <div className="grid grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1 text-sm font-semibold">
-          {(["video", "audio"] as const).map((m) => (
-            <button key={m} type="button" onClick={() => { if (m === "audio") stop(); setMode(m); }}
-              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 transition-colors ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-              {m === "video" ? <><Video className="size-4" /> Video Call</> : <><Mic className="size-4" /> Audio Call</>}
-            </button>
-          ))}
-        </div>
+      <div className="mx-auto w-full max-w-md px-4 pb-8 pt-5 sm:max-w-xl">
+        <h1 className="text-2xl font-bold">Talk to someone new</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {online > 0 ? `${online} online now · ` : ""}Free · Skip anytime · 18+
+        </p>
 
-        <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-3xl border border-border bg-surface">
-          <video ref={videoRef} autoPlay muted playsInline
-            className={`absolute inset-0 size-full object-cover ${facing === "user" ? "-scale-x-100" : ""} ${camOn && mode === "video" ? "" : "hidden"}`} />
-          {!(camOn && mode === "video") && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
-              {mode === "video" ? <Video className="size-9 text-primary" /> : <Headphones className="size-9 text-primary" />}
-              <h1 className="text-xl font-bold">{mode === "video" ? "Meet someone new." : "Talk with your voice."}</h1>
-              {mode === "video" && (
-                <button type="button" onClick={() => start()} className="rounded-full border border-primary px-4 py-1.5 text-xs font-semibold text-primary">
-                  {camError ? "Allow camera in settings" : "Check your camera"}
-                </button>
-              )}
-            </div>
+        <div className="mt-5 grid gap-3">
+          {signedIn ? (
+            <Link to="/chat" className={card}>{videoInner}</Link>
+          ) : (
+            <button type="button" onClick={onGoogle} disabled={busy} className={card}>{videoInner}</button>
           )}
-          <div className="absolute inset-x-3 top-3">
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground">
-              <span className="size-1.5 animate-pulse rounded-full bg-destructive-foreground" /> LIVE
+          <a href="#rooms" className={card}>
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-foreground">
+              <Mic className="size-5" />
             </span>
-          </div>
-          {mode === "video" && (
-            <div className="absolute bottom-3 left-3 flex gap-2">
-              <RoundBtn label={camOn ? "Camera off" : "Camera on"} active={camOn} onClick={toggleCam}>
-                {camOn ? <Video className="size-4" /> : <VideoOff className="size-4" />}
-              </RoundBtn>
-              <RoundBtn label={micOn ? "Mute mic" : "Unmute mic"} active={micOn} onClick={() => setMicOn((v) => !v)}>
-                {micOn ? <Mic className="size-4" /> : <MicOff className="size-4" />}
-              </RoundBtn>
-              <RoundBtn label="Flip camera" active={false} onClick={flip}><RefreshCw className="size-4" /></RoundBtn>
-            </div>
-          )}
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-semibold">Voice Rooms</span>
+              <span className="block text-xs text-muted-foreground">Join a live room and talk with your voice</span>
+            </span>
+            <ChevronRight className="size-5 text-muted-foreground" />
+          </a>
         </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <Cta className={`${pill} border-border bg-card`}><MessageSquare className="size-4" /> Start Chat</Cta>
-          <Cta className={`${pill} border-primary bg-primary text-primary-foreground`}><Zap className="size-4" /> Instant Match</Cta>
-        </div>
-        <p className="mt-2 text-center text-xs text-muted-foreground">{signedIn ? "Free · Skip anytime" : "One tap with Google · Free"} · 18+ only</p>
-
-        <div className="mt-7 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-lg font-bold"><Radio className="size-5 text-destructive" /> People Online</h2>
-          <span className="text-xs text-muted-foreground">{online} online now</span>
-        </div>
-        {!signedIn ? (
-          <p className="mt-3 rounded-2xl border border-border bg-card p-4 text-center text-sm text-muted-foreground">
-            Sign in to see who's online right now.
-          </p>
-        ) : onlineUsers.length === 0 ? (
-          <p className="mt-3 rounded-2xl border border-border bg-card p-4 text-center text-sm text-muted-foreground">
-            Nobody else is online right now — check back soon.
-          </p>
-        ) : (
-          <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-            {onlineUsers.map((u) => (
-              <OnlineAvatar key={u.id} user={u} />
-            ))}
-          </div>
+        {!signedIn && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">One tap with Google to start</p>
         )}
 
-        <LiveRoomsSection signedIn={signedIn} busy={busy} onGoogle={onGoogle} />
+        {signedIn && onlineUsers.length > 0 && (
+          <>
+            <h2 className="mt-8 text-base font-semibold">Online now</h2>
+            <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+              {onlineUsers.map((u) => (
+                <OnlineAvatar key={u.id} user={u} />
+              ))}
+            </div>
+          </>
+        )}
+
+        <div id="rooms" className="scroll-mt-20">
+          <LiveRoomsSection signedIn={signedIn} busy={busy} onGoogle={onGoogle} />
+        </div>
       </div>
     </section>
   );
@@ -152,28 +92,15 @@ function OnlineAvatar({ user }: { user: OnlineUser }) {
     };
   }, [user.avatar_url]);
   return (
-    <div className="relative flex size-14 shrink-0 items-center justify-center">
-      <div className="flex size-14 items-center justify-center overflow-hidden rounded-full border-2 border-accent/70 bg-surface">
+    <div className="flex w-14 shrink-0 flex-col items-center gap-1">
+      <div className="flex size-12 items-center justify-center overflow-hidden rounded-full bg-secondary">
         {url ? (
           <img src={url} alt="" className="size-full object-cover" />
         ) : (
-          <span className="text-lg font-bold text-primary">{user.display_name.charAt(0).toUpperCase() || "?"}</span>
+          <span className="text-base font-semibold">{user.display_name.charAt(0).toUpperCase() || "?"}</span>
         )}
       </div>
-      <span className="absolute -bottom-1 rounded bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">LIVE</span>
+      <span className="w-full truncate text-center text-[10px] text-muted-foreground">{user.display_name}</span>
     </div>
-  );
-}
-
-function RoundBtn({ children, label, active, onClick }: { children: React.ReactNode; label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      className={`flex size-9 items-center justify-center rounded-full border bg-background/70 backdrop-blur-md ${active ? "border-primary text-primary" : "border-border text-foreground"}`}
-    >
-      {children}
-    </button>
   );
 }
