@@ -173,6 +173,41 @@ function ProfilePage() {
         </div>
 
         <div className="mt-8 space-y-5 rounded-2xl border border-border bg-card p-6">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="size-20 rounded-full border-2 border-primary/50 object-cover" />
+              ) : (
+                <span className="flex size-20 items-center justify-center rounded-full border-2 border-dashed border-border bg-surface text-2xl font-bold text-muted-foreground">
+                  {(displayName || "S").charAt(0).toUpperCase()}
+                </span>
+              )}
+              {uploading && (
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70">
+                  <Loader2 className="size-5 animate-spin text-primary" />
+                </span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                <Camera className="size-4" /> Upload photo
+              </Button>
+              {avatarUrl && (
+                <Button variant="ghost" size="sm" onClick={() => void removeAvatar()} disabled={uploading}>
+                  <Trash2 className="size-4" /> Remove
+                </Button>
+              )}
+              <p className="text-xs text-muted-foreground">JPG or PNG · auto-resized</p>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => void handleAvatarChange(e)}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="dn">Display name</Label>
             <Input
@@ -235,6 +270,19 @@ function ProfilePage() {
                   </Badge>
                 ))}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="A line about you — strangers see this before the call starts."
+              maxLength={200}
+              rows={3}
+            />
+            <p className="text-right text-xs text-muted-foreground">{bio.length}/200</p>
           </div>
 
           <Button onClick={save} disabled={saving}>
