@@ -202,7 +202,7 @@ function Landing() {
         <Link to="/chat" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
           <Video className="size-5" /> Video
         </Link>
-        <button type="button" onClick={() => { setMode("audio"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
+        <button type="button" onClick={() => document.getElementById("rooms")?.scrollIntoView({ behavior: "smooth" })} className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
           <Headphones className="size-5" /> Rooms
         </button>
         <Link to="/profile" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
