@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Radio, Shield, SkipForward, MessageSquare, Globe, Sparkles, Loader2 } from "lucide-react";
+import {
+  Radio, Shield, SkipForward, MessageSquare, Globe, Sparkles, Loader2,
+  Video, Mic, Headphones, SlidersHorizontal, Zap, Users, Music, Gamepad2, Coffee,
+  Home, UserRound,
+} from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -88,10 +92,17 @@ const FEATURES = [
   },
 ];
 
+const ROOMS = [
+  { icon: Music, title: "Music & Chill" },
+  { icon: Gamepad2, title: "Gaming Talk" },
+  { icon: Coffee, title: "Late Night Chat" },
+];
+
 function Landing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<"video" | "audio">("video");
 
   async function startWithGoogle() {
     setBusy(true);
@@ -124,89 +135,111 @@ function Landing() {
       <SiteHeader />
 
       <main>
-        <section className="grain relative overflow-hidden border-b border-border">
-          <div aria-hidden className="hero-blob pointer-events-none absolute -left-24 -top-24 size-80 rounded-full bg-primary/20 blur-3xl" />
-          <div aria-hidden className="hero-blob pointer-events-none absolute -bottom-24 right-0 size-96 rounded-full bg-accent/20 blur-3xl [animation-delay:-6s]" />
-          <div className="relative mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:py-28">
-            <div className="hero-rise text-center lg:text-left">
-              <p className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-widest text-primary">
-                <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-                Live now
-              </p>
-              <h1 className="mt-6 text-4xl font-bold leading-[1.05] sm:text-6xl">
-                Talk to a total
-                <span className="block bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">stranger.</span>
-              </h1>
-              <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground sm:text-lg lg:mx-0">
-                CHAT STATION drops you straight into a one-to-one video call with somebody else who
-                pressed start. Say hi, have a chat, or skip to the next face.
-              </p>
-              <div className="mt-8">
-                {user ? (
-                  <Button asChild className="glow-ring cta-breathe h-16 w-full rounded-2xl bg-gradient-to-r from-primary to-accent text-lg font-bold sm:w-auto sm:px-10">
-                    <Link to="/chat">
-                      <span className="size-2.5 animate-pulse rounded-full bg-primary-foreground" />
-                      Start Live Video Chat
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={startWithGoogle}
-                    disabled={busy}
-                    className="glow-ring cta-breathe h-16 w-full rounded-2xl bg-gradient-to-r from-primary to-accent text-lg font-bold sm:w-auto sm:px-10"
-                  >
-                    {busy ? (
-                      <Loader2 className="size-5 animate-spin" />
-                    ) : (
-                      <span className="size-2.5 animate-pulse rounded-full bg-primary-foreground" />
-                    )}
-                    Start Live Video Chat
-                  </Button>
-                )}
-                {!user && (
-                  <p className="mt-3 text-sm text-muted-foreground">One tap with Google · Free</p>
-                )}
+        <section className="relative border-b border-border">
+          <div className="mx-auto w-full max-w-md px-4 pb-8 pt-5 sm:max-w-xl">
+            {/* Mode toggle */}
+            <div className="grid grid-cols-2 rounded-full border border-border bg-card p-1 text-sm font-semibold">
+              <button
+                type="button"
+                onClick={() => setMode("video")}
+                className={`flex items-center justify-center gap-2 rounded-full py-2.5 transition-colors ${mode === "video" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+              >
+                <Video className="size-4" /> Video Chat
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("audio")}
+                className={`flex items-center justify-center gap-2 rounded-full py-2.5 transition-colors ${mode === "audio" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+              >
+                <Mic className="size-4" /> Audio Rooms
+              </button>
+            </div>
+
+            {/* Preview card */}
+            <div className="glow-ring relative mt-5 aspect-[4/5] overflow-hidden rounded-3xl border border-primary/30 bg-surface">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/25 via-surface to-accent/25" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center">
+                <div className="relative">
+                  <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
+                  <div className="relative flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                    {mode === "video" ? <Video className="size-8" /> : <Headphones className="size-8" />}
+                  </div>
+                </div>
+                <h1 className="text-2xl font-bold leading-tight sm:text-3xl">
+                  {mode === "video" ? "Meet someone new." : "Talk with your voice."}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {mode === "video"
+                    ? "One-to-one live video with a random person. Skip anytime."
+                    : "Voice-only rooms for 5–6 people. Coming soon."}
+                </p>
               </div>
-              <p className="mt-6 text-xs text-muted-foreground">
+              <div className="absolute inset-x-3 top-3 flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 px-3 py-1 text-xs font-semibold backdrop-blur-md">
+                  <span className="size-2 animate-pulse rounded-full bg-destructive" /> LIVE
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-background/60 px-3 py-1 text-xs backdrop-blur-md">
+                  <Globe className="size-3.5" /> Worldwide
+                </span>
+              </div>
+              <div className="absolute inset-x-0 bottom-4 flex justify-center gap-2 px-3">
+                {["Everyone", "Interests", "Country"].map((f) => (
+                  <span key={f} className="inline-flex items-center gap-1 rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium backdrop-blur-md">
+                    <SlidersHorizontal className="size-3" /> {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Instant match */}
+            <div className="mt-5">
+              {mode === "audio" ? (
+                <Button disabled className="h-16 w-full rounded-2xl text-lg font-bold">
+                  <Headphones className="size-5" /> Audio Rooms — Coming soon
+                </Button>
+              ) : user ? (
+                <Button asChild className="glow-ring cta-breathe h-16 w-full rounded-2xl bg-gradient-to-r from-primary to-accent text-lg font-bold">
+                  <Link to="/chat">
+                    <Zap className="size-5" /> Instant Match
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  onClick={startWithGoogle}
+                  disabled={busy}
+                  className="glow-ring cta-breathe h-16 w-full rounded-2xl bg-gradient-to-r from-primary to-accent text-lg font-bold"
+                >
+                  {busy ? <Loader2 className="size-5 animate-spin" /> : <Zap className="size-5" />}
+                  Instant Match
+                </Button>
+              )}
+              {!user && mode === "video" && (
+                <p className="mt-2 text-center text-sm text-muted-foreground">One tap with Google · Free</p>
+              )}
+              <p className="mt-3 text-center text-xs text-muted-foreground">
                 18+ only. Be kind — calls can be reported and accounts can be banned.
               </p>
             </div>
 
-            <div className="hero-float relative mx-auto w-full max-w-sm lg:max-w-none">
-              <div className="glow-ring relative aspect-[3/4] overflow-hidden rounded-[2rem] border border-primary/30 bg-surface sm:aspect-[4/3]">
-                {/* stranger video */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-surface to-accent/30" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="relative">
-                    <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
-                    <div className="relative flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-3xl font-bold text-primary-foreground">
-                      ✦
+            {/* Audio rooms preview */}
+            <div className="mt-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold">Audio Rooms</h2>
+                <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">Coming soon</span>
+              </div>
+              <div className="mt-3 grid gap-3">
+                {ROOMS.map((r) => (
+                  <div key={r.title} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
+                    <div className="flex size-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                      <r.icon className="size-5" />
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold">{r.title}</p>
+                      <p className="text-xs text-muted-foreground">Up to 6 people · Voice only</p>
+                    </div>
+                    <Users className="size-4 text-muted-foreground" />
                   </div>
-                </div>
-                {/* top bar */}
-                <div className="absolute inset-x-3 top-3 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-background/60 px-3 py-1 text-xs font-semibold backdrop-blur-md">
-                    <span className="size-2 animate-pulse rounded-full bg-destructive" /> LIVE
-                  </span>
-                  <span className="rounded-full bg-background/60 px-3 py-1 text-xs backdrop-blur-md">🌍 Stranger · 00:42</span>
-                </div>
-                {/* floating reactions */}
-                <span className="hero-rise absolute right-6 top-1/3 text-2xl [animation-delay:0.4s]">❤️</span>
-                <span className="hero-rise absolute right-12 top-1/2 text-xl [animation-delay:0.9s]">😂</span>
-                <span className="hero-rise absolute left-6 top-1/2 text-xl [animation-delay:1.3s]">👋</span>
-                {/* chat bubble */}
-                <div className="absolute bottom-20 left-3 max-w-[70%] rounded-2xl rounded-bl-sm bg-background/70 px-3 py-2 text-sm backdrop-blur-md">
-                  Hi! Where are you from? 😊
-                </div>
-                {/* self view */}
-                <div className="absolute bottom-20 right-3 h-24 w-20 overflow-hidden rounded-xl border-2 border-primary/60 bg-gradient-to-br from-accent/40 to-primary/40 shadow-lg" />
-                {/* controls */}
-                <div className="absolute inset-x-0 bottom-3 flex justify-center gap-3">
-                  <span className="flex size-11 items-center justify-center rounded-full bg-background/70 backdrop-blur-md"><MessageSquare className="size-5" /></span>
-                  <span className="flex h-11 items-center gap-2 rounded-full bg-gradient-to-r from-primary to-accent px-5 text-sm font-bold text-primary-foreground"><SkipForward className="size-4" /> Next</span>
-                  <span className="flex size-11 items-center justify-center rounded-full bg-background/70 backdrop-blur-md"><Radio className="size-5 text-primary" /></span>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -267,6 +300,22 @@ function Landing() {
           </Link>
         </div>
       </footer>
+
+      <div className="h-16 sm:hidden" />
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border bg-background/90 backdrop-blur sm:hidden">
+        <Link to="/" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-primary">
+          <Home className="size-5" /> Home
+        </Link>
+        <Link to="/chat" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
+          <Video className="size-5" /> Video
+        </Link>
+        <button type="button" onClick={() => { setMode("audio"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
+          <Headphones className="size-5" /> Rooms
+        </button>
+        <Link to="/profile" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
+          <UserRound className="size-5" /> Profile
+        </Link>
+      </nav>
     </div>
   );
 }
