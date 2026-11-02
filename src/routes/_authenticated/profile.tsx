@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Camera, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -18,6 +20,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, GENDERS } from "@/lib/constants";
+import { clearAvatarCache, fileToAvatarBlob, getAvatarUrl } from "@/lib/avatars";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -37,17 +40,23 @@ function ProfilePage() {
   const { user, profile, refreshProfile } = useAuth();
 
   const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
   const [gender, setGender] = useState("unspecified");
   const [country, setCountry] = useState("XX");
   const [interests, setInterests] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!profile) return;
     setDisplayName(profile.display_name);
+    setBio(profile.bio ?? "");
     setGender(profile.gender);
     setCountry(profile.country);
     setInterests((profile.interests ?? []).join(", "));
+    void getAvatarUrl(profile.avatar_url).then((u) => setAvatarUrl(u));
   }, [profile]);
 
   const { data: stats } = useQuery({
