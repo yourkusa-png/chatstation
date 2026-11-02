@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   Mic,
@@ -20,8 +19,7 @@ import {
   SlidersHorizontal,
   LogOut,
   Smile,
-  ImageIcon,
-  Search,
+  Gift,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -52,7 +50,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRandomChat } from "@/hooks/useRandomChat";
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, GENDERS, REPORT_REASONS, countryLabel, genderLabel } from "@/lib/constants";
-import { searchGifs } from "@/lib/gifs.functions";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({
@@ -70,6 +67,7 @@ export const Route = createFileRoute("/_authenticated/chat")({
 
 const ANY = "__any__";
 const EMOJIS = ["😀", "😂", "😍", "🥰", "😎", "🤩", "😊", "😉", "🤗", "🤔", "😮", "😢", "❤️", "🔥", "👏", "👍", "👋", "🎉", "🌍", "✨"];
+const GIFTS = ["🌹", "❤️", "☕", "🍫", "🍕", "🎉", "👑", "🎁"];
 
 function ChatPage() {
   const { user, profile, refreshProfile } = useAuth();
@@ -79,7 +77,6 @@ function ChatPage() {
   const remoteRef = useRef<HTMLVideoElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
-  const gifSearch = useServerFn(searchGifs);
 
   const [interestText, setInterestText] = useState("");
   const [wantGender, setWantGender] = useState<string>(ANY);
@@ -91,12 +88,10 @@ function ChatPage() {
   const [confirming, setConfirming] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [likeBurst, setLikeBurst] = useState(0);
+  const [giftBurst, setGiftBurst] = useState<{ gift: string; seq: number } | null>(null);
   const [countrySearch, setCountrySearch] = useState("");
   const [emojiOpen, setEmojiOpen] = useState(false);
-  const [gifOpen, setGifOpen] = useState(false);
-  const [gifQuery, setGifQuery] = useState("");
-  const [gifSearchTerm, setGifSearchTerm] = useState("");
-  const [sendingGif, setSendingGif] = useState<string | null>(null);
+  const [giftOpen, setGiftOpen] = useState(false);
 
   const isPremium = profile?.is_premium ?? false;
 
@@ -117,12 +112,6 @@ function ChatPage() {
     },
   });
 
-  const { data: gifResults, isFetching: gifsLoading } = useQuery({
-    queryKey: ["chat-gifs", gifSearchTerm],
-    enabled: gifOpen && chat.status === "connected",
-    queryFn: () => gifSearch({ data: { q: gifSearchTerm } }),
-    staleTime: 60_000,
-  });
 
   useEffect(() => {
     if (localRef.current && chat.localStream) localRef.current.srcObject = chat.localStream;
@@ -146,6 +135,13 @@ function ChatPage() {
     const timer = window.setTimeout(() => setLikeBurst(0), 1400);
     return () => window.clearTimeout(timer);
   }, [chat.likesReceived]);
+
+  useEffect(() => {
+    if (!chat.giftReceived) return;
+    setGiftBurst(chat.giftReceived);
+    const timer = window.setTimeout(() => setGiftBurst(null), 1600);
+    return () => window.clearTimeout(timer);
+  }, [chat.giftReceived]);
 
   useEffect(() => {
     if (profile?.interests?.length) setInterestText(profile.interests.join(", "));
@@ -175,17 +171,6 @@ function ChatPage() {
     });
   }
 
-  async function sendGif(url: string) {
-    setSendingGif(url);
-    try {
-      await chat.sendGif(url);
-      setGifOpen(false);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "GIF not sent");
-    } finally {
-      setSendingGif(null);
-    }
-  }
 
   async function confirmAge() {
     if (!user) return;
@@ -416,6 +401,12 @@ function ChatPage() {
                 <span className="sr-only">Like received</span>
               </div>
             )}
+            {giftBurst && (
+              <div key={`gift-${giftBurst.seq}`} className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-live="polite">
+                <span className="like-pop text-7xl drop-shadow-lg">{giftBurst.gift}</span>
+                <span className="sr-only">Gift received</span>
+              </div>
+            )}
           </section>
 
           {/* ---------------- you (bottom) ---------------- */}
@@ -552,37 +543,30 @@ function ChatPage() {
                   </div>
                 </PopoverContent>
               </Popover>
-              <Popover open={gifOpen} onOpenChange={setGifOpen}>
+              <Popover open={giftOpen} onOpenChange={setGiftOpen}>
                 <PopoverTrigger asChild>
-                  <Button type="button" size="icon" variant="outline" className="size-12 shrink-0 rounded-full bg-background/70 backdrop-blur" disabled={!connected} aria-label="Send a GIF">
-                    <ImageIcon className="size-5" />
+                  <Button type="button" size="icon" variant="outline" className="size-12 shrink-0 rounded-full bg-background/70 backdrop-blur" disabled={!connected} aria-label="Send a gift">
+                    <Gift className="size-5" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent side="top" align="start" className="w-[min(22rem,calc(100vw-1.5rem))] p-3">
-                  <form
-                    className="mb-3 flex gap-2"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      setGifSearchTerm(gifQuery.trim());
-                    }}
-                  >
-                    <Input value={gifQuery} onChange={(event) => setGifQuery(event.target.value)} placeholder="Search GIFs" maxLength={60} />
-                    <Button type="submit" size="icon" aria-label="Search GIFs"><Search className="size-4" /></Button>
-                  </form>
-                  <div className="grid max-h-52 grid-cols-3 gap-1.5 overflow-y-auto">
-                    {gifsLoading ? (
-                      <div className="col-span-3 flex h-32 items-center justify-center"><Loader2 className="size-5 animate-spin text-primary" /></div>
-                    ) : gifResults?.error ? (
-                      <p className="col-span-3 py-8 text-center text-sm text-muted-foreground">{gifResults.error}</p>
-                    ) : gifResults?.gifs.length ? (
-                      gifResults.gifs.map((gif) => (
-                        <Button key={gif.id} type="button" variant="ghost" className="h-20 overflow-hidden rounded-lg p-0" disabled={sendingGif === gif.url} onClick={() => void sendGif(gif.url)} aria-label="Send this GIF">
-                          <img src={gif.url} alt="GIF result" loading="lazy" className="size-full object-cover" />
-                        </Button>
-                      ))
-                    ) : (
-                      <p className="col-span-3 py-8 text-center text-sm text-muted-foreground">No GIFs found</p>
-                    )}
+                <PopoverContent side="top" align="start" className="w-64 p-3">
+                  <p className="mb-2 text-center text-xs text-muted-foreground">Send a small gift</p>
+                  <div className="grid grid-cols-4 gap-1" aria-label="Gift picker">
+                    {GIFTS.map((gift) => (
+                      <Button
+                        key={gift}
+                        type="button"
+                        variant="ghost"
+                        className="text-2xl"
+                        onClick={() => {
+                          chat.sendGift(gift);
+                          setGiftOpen(false);
+                        }}
+                        aria-label={`Send gift ${gift}`}
+                      >
+                        {gift}
+                      </Button>
+                    ))}
                   </div>
                 </PopoverContent>
               </Popover>
