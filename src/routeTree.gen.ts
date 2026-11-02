@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as TopicsSlugRouteImport } from './routes/topics.$slug'
 import { Route as AuthenticatedRoomIdRouteImport } from './routes/_authenticated/room.$id'
@@ -48,6 +49,11 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/history': typeof AuthenticatedHistoryRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/room/$id': typeof AuthenticatedRoomIdRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/history': typeof AuthenticatedHistoryRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/room/$id': typeof AuthenticatedRoomIdRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
+  '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/_authenticated/room/$id': typeof AuthenticatedRoomIdRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/admin'
     | '/chat'
+    | '/history'
     | '/profile'
     | '/topics/$slug'
     | '/room/$id'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/admin'
     | '/chat'
+    | '/history'
     | '/profile'
     | '/topics/$slug'
     | '/room/$id'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/_authenticated/admin'
     | '/_authenticated/chat'
+    | '/_authenticated/history'
     | '/_authenticated/profile'
     | '/topics/$slug'
     | '/_authenticated/room/$id'
@@ -182,6 +194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/history': {
+      id: '/_authenticated/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthenticatedHistoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -209,6 +228,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
+  AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRoomIdRoute: typeof AuthenticatedRoomIdRoute
 }
@@ -216,6 +236,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
+  AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRoomIdRoute: AuthenticatedRoomIdRoute,
 }

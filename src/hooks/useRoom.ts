@@ -161,6 +161,16 @@ export function useRoom(roomId: string | undefined) {
       } catch {
         destroyPeer(from);
       }
+      if (payload.type === "host-mute") {
+        const muted = payload.muted ?? true;
+        const track = localStreamRef.current?.getAudioTracks()[0];
+        if (track && track.enabled === muted) {
+          track.enabled = !muted;
+          micOnRef.current = !muted;
+          setMicOn(!muted);
+          channelRef.current?.track({ ...metaRef.current, mic_on: !muted });
+        }
+      }
     },
     [userId, createPeer, sendSignal, destroyPeer],
   );
