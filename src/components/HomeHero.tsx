@@ -57,8 +57,6 @@ export function HomeHero({ signedIn, busy, onGoogle, mode, setMode }: Props) {
     if (camOn) start(next);
   }
 
-  const ctaClass =
-    "glow-ring cta-breathe flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-accent text-base font-extrabold uppercase tracking-wide text-primary-foreground disabled:opacity-60";
 
   const online = useOnlineCount();
   const Cta = ({ children, className }: { children: React.ReactNode; className: string }) =>
