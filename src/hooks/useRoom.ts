@@ -124,7 +124,7 @@ export function useRoom(roomId: string | undefined) {
   );
 
   const handleSignal = useCallback(
-    async (from: string, payload: { type: string; sdp?: string; candidate?: RTCIceCandidateInit }) => {
+    async (from, payload: { type: string; sdp?: string; candidate?: RTCIceCandidateInit; muted?: boolean }) => {
       if (!userId) return;
       let pc = pcsRef.current.get(from);
       if (!pc && payload.type === "offer") {
