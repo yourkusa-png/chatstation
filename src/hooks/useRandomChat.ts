@@ -87,11 +87,11 @@ function pickQuality() {
   const mem = nav.deviceMemory ?? 4;
   const net = nav.connection?.effectiveType ?? "4g";
   const save = nav.connection?.saveData ?? false;
-  if (save || net === "slow-2g" || net === "2g" || net === "3g" || cores <= 4 || mem <= 2) {
+  if (save || net === "slow-2g" || net === "2g" || net === "3g" || cores <= 2 || mem <= 1) {
     return { w: 480, h: 360, fps: 20, bitrate: 300_000 };
   }
-  if (cores >= 8 && mem >= 6) return { w: 1280, h: 720, fps: 30, bitrate: 1_200_000 };
-  return { w: 640, h: 480, fps: 24, bitrate: 600_000 };
+  if (cores >= 4 && mem >= 3) return { w: 1280, h: 720, fps: 30, bitrate: 1_200_000 };
+  return { w: 960, h: 540, fps: 30, bitrate: 900_000 };
 }
 const QUALITY = pickQuality();
 const VIDEO_SIZE = {

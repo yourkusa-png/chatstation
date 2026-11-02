@@ -368,7 +368,7 @@ function ChatPage() {
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-surface sm:rounded-3xl sm:border sm:border-border">
           {/* ---------------- stranger — full screen ---------------- */}
           <section className="relative min-h-0 flex-1 overflow-hidden bg-background">
-            <video ref={remoteRef} autoPlay playsInline className="size-full object-cover" />
+            <video ref={remoteRef} autoPlay playsInline className="absolute inset-x-0 top-0 h-1/2 w-full object-cover" />
 
             {!connected && (
               <div className="grain absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
@@ -451,11 +451,7 @@ function ChatPage() {
             )}
 
             {/* self view — small floating window (hidden while the chat panel is open) */}
-            <div
-              className={`absolute bottom-28 right-3 z-10 aspect-[3/4] w-24 overflow-hidden rounded-2xl border-2 border-primary/60 bg-surface shadow-lg transition-all sm:w-28 ${
-                chatOpen ? "translate-x-40 opacity-0" : "opacity-100"
-              }`}
-            >
+            <div className="absolute inset-x-0 bottom-0 z-[5] h-1/2 overflow-hidden border-t-2 border-primary/60 bg-surface">
               {chat.localStream ? (
                 <video
                   ref={localRef}
