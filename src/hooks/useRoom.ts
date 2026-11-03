@@ -103,8 +103,15 @@ export function useRoom(roomId: string | undefined) {
         if (event.candidate) sendSignal(peerId, { type: "candidate", candidate: event.candidate.toJSON() });
       };
       pc.ontrack = (event) => {
-        const stream = event.streams[0];
-        if (stream) setRemoteStreams((prev) => new Map(prev).set(peerId, stream));
+        setRemoteStreams((prev) => {
+          const existing = prev.get(peerId);
+          const tracks = event.streams[0]?.getTracks() ?? [event.track];
+          const all = [...(existing?.getTracks() ?? [])];
+          tracks.forEach((t) => {
+            if (!all.includes(t)) all.push(t);
+          });
+          return new Map(prev).set(peerId, new MediaStream(all));
+        });
       };
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === "failed") {
@@ -384,6 +391,43 @@ export function useRoom(roomId: string | undefined) {
     channelRef.current?.track({ ...metaRef.current, mic_on: track.enabled });
   }, []);
 
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  const switchCamera = useCallback(async () => {
+    const stream = localStreamRef.current;
+    const oldTrack = stream?.getVideoTracks()[0];
+    if (!stream || !oldTrack) return;
+    const next = facingMode === "user" ? "environment" : "user";
+    try {
+      oldTrack.stop();
+      const fresh = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: { ideal: next } },
+      });
+      const newTrack = fresh.getVideoTracks()[0];
+      if (!newTrack) return;
+      newTrack.enabled = camOnRef.current;
+      stream.removeTrack(oldTrack);
+      stream.addTrack(newTrack);
+      for (const pc of pcsRef.current.values()) {
+        const sender = pc.getSenders().find((s) => s.track?.kind === "video" || s.track === oldTrack);
+        void sender?.replaceTrack(newTrack);
+      }
+      setLocalStream(new MediaStream(stream.getTracks()));
+      setFacingMode(next);
+    } catch {
+      setError("Could not switch camera");
+    }
+  }, [facingMode]);
+
+  const setThumbnail = useCallback(
+    async (thumbnail: string) => {
+      if (!room || room.host_id !== userId) return;
+      const { error: updateError } = await supabase.from("rooms").update({ thumbnail }).eq("id", room.id);
+      if (updateError) setError(updateError.message);
+      else setRoom({ ...room, thumbnail });
+    },
+    [room, userId],
+  );
+
   const hostSetMic = useCallback(
     (peerId: string, muted: boolean) => {
       if (!room || room.host_id !== userId) return;
@@ -424,6 +468,9 @@ export function useRoom(roomId: string | undefined) {
     endRoom,
     toggleCam,
     toggleMic,
+    switchCamera,
+    facingMode,
+    setThumbnail,
     hostSetMic,
     sendMessage,
   };

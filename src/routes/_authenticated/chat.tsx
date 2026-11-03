@@ -84,6 +84,7 @@ function ChatPage() {
 
   const localRef = useRef<HTMLVideoElement>(null);
   const remoteRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
 
@@ -157,8 +158,16 @@ function ChatPage() {
   }, [chat.localStream]);
 
   useEffect(() => {
-    if (remoteRef.current) remoteRef.current.srcObject = chat.remoteStream;
-  }, [chat.remoteStream]);
+    if (remoteRef.current) {
+      remoteRef.current.srcObject = chat.remoteStream;
+      void remoteRef.current.play().catch(() => {});
+    }
+    // Sound plays through a dedicated audio element (works in video + audio mode, and on mobile autoplay rules).
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = chat.remoteStream;
+      if (chat.remoteStream) void remoteAudioRef.current.play().catch(() => {});
+    }
+  }, [chat.remoteStream, chat.status]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -358,6 +367,7 @@ function ChatPage() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
+      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       <SiteHeader onDisableDevices={chat.disableDevices} onOpenFilters={() => setFiltersOpen(true)} />
       <main className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col sm:py-3">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface sm:rounded-3xl sm:border sm:border-border">
@@ -377,7 +387,7 @@ function ChatPage() {
           <>
           {/* ---------------- stranger (top) ---------------- */}
           <section className="relative min-h-0 flex-1 overflow-hidden bg-background">
-            <video ref={remoteRef} autoPlay playsInline className="size-full object-cover" />
+            <video ref={remoteRef} autoPlay playsInline muted className="size-full object-cover" />
 
             {!connected && (
               <div className="grain absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
