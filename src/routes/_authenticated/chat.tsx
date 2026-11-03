@@ -55,9 +55,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { COUNTRIES, GENDERS, REPORT_REASONS, countryLabel, genderLabel } from "@/lib/constants";
 
 export const Route = createFileRoute("/_authenticated/chat")({
-  validateSearch: (search: Record<string, unknown>): { mode?: "audio" | "video" } => ({
-    mode: search["mode"] === "audio" ? "audio" : search["mode"] === "video" ? "video" : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { mode?: "audio" | "video" } => {
+    const mode = search["mode"] === "audio" ? "audio" : search["mode"] === "video" ? "video" : undefined;
+    return mode ? { mode } : {};
+  },
   head: () => ({
     meta: [
       { title: "Video chat · CHAT STATION" },
