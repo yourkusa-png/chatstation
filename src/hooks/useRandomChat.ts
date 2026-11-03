@@ -532,7 +532,8 @@ export function useRandomChat() {
     });
 
     pc.ontrack = (event) => {
-      event.streams[0]?.getTracks().forEach((t) => {
+      const incoming = event.streams[0]?.getTracks() ?? [event.track];
+      incoming.forEach((t) => {
         if (!remote.getTracks().includes(t)) remote.addTrack(t);
       });
       setRemoteStream(new MediaStream(remote.getTracks()));

@@ -84,6 +84,7 @@ function ChatPage() {
 
   const localRef = useRef<HTMLVideoElement>(null);
   const remoteRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
 
@@ -157,8 +158,16 @@ function ChatPage() {
   }, [chat.localStream]);
 
   useEffect(() => {
-    if (remoteRef.current) remoteRef.current.srcObject = chat.remoteStream;
-  }, [chat.remoteStream]);
+    if (remoteRef.current) {
+      remoteRef.current.srcObject = chat.remoteStream;
+      void remoteRef.current.play().catch(() => {});
+    }
+    // Sound plays through a dedicated audio element (works in video + audio mode, and on mobile autoplay rules).
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = chat.remoteStream;
+      if (chat.remoteStream) void remoteAudioRef.current.play().catch(() => {});
+    }
+  }, [chat.remoteStream, chat.status]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
