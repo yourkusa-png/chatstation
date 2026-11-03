@@ -468,6 +468,9 @@ export function useRoom(roomId: string | undefined) {
     endRoom,
     toggleCam,
     toggleMic,
+    switchCamera,
+    facingMode,
+    setThumbnail,
     hostSetMic,
     sendMessage,
   };

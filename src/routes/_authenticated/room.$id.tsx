@@ -7,6 +7,7 @@ import {
   MessageSquare,
   Mic,
   MicOff,
+  RefreshCw,
   Send,
   Users,
   Video,
@@ -18,6 +19,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRoom } from "@/hooks/useRoom";
+import { ROOM_THUMBNAILS } from "@/hooks/useRooms";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getAvatarUrl } from "@/lib/avatars";
 
 export const Route = createFileRoute("/_authenticated/room/$id")({
@@ -77,6 +80,7 @@ function Tile({
     if (videoRef.current && videoRef.current.srcObject !== stream) {
       videoRef.current.srcObject = stream;
     }
+    if (videoRef.current && stream) void videoRef.current.play().catch(() => {});
   }, [stream]);
 
   return (
@@ -185,7 +189,27 @@ function RoomPage() {
         <Button variant="ghost" size="icon" aria-label="Leave room" onClick={handleLeave}>
           <ArrowLeft className="size-5" />
         </Button>
-        <span className="text-xl">{room.room?.thumbnail ?? "🎙️"}</span>
+        {room.isHost ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" aria-label="Change thumbnail" className="flex size-9 items-center justify-center rounded-xl border border-border bg-card text-xl">
+                {room.room?.thumbnail ?? "🎙️"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 rounded-2xl p-2">
+              <p className="mb-2 text-center text-xs text-muted-foreground">Change thumbnail</p>
+              <div className="grid grid-cols-5 gap-1">
+                {ROOM_THUMBNAILS.map((e) => (
+                  <button key={e} type="button" onClick={() => void room.setThumbnail(e)} className={`flex size-9 items-center justify-center rounded-lg text-xl ${room.room?.thumbnail === e ? "bg-primary/20" : "hover:bg-secondary"}`}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <span className="text-xl">{room.room?.thumbnail ?? "🎙️"}</span>
+        )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold">{room.room?.title ?? "Live room"}</p>
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -262,6 +286,14 @@ function RoomPage() {
             className={`flex size-12 items-center justify-center rounded-full border ${room.camOn ? "border-border bg-card" : "border-destructive/60 bg-destructive/20 text-destructive"}`}
           >
             {room.camOn ? <Video className="size-5" /> : <VideoOff className="size-5" />}
+          </button>
+          <button
+            type="button"
+            aria-label="Flip camera"
+            onClick={() => void room.switchCamera()}
+            className="flex size-12 items-center justify-center rounded-full border border-border bg-card"
+          >
+            <RefreshCw className="size-5" />
           </button>
           {room.isHost ? (
             <button
