@@ -51,7 +51,12 @@ export const Route = createFileRoute("/")({
           applicationCategory: "CommunicationApplication",
           operatingSystem: "Web, Android, iOS",
           description:
-            "Free random video chat with strangers. A modern Omegle and OmeTV alternative.",
+            "Free random video and audio chat with strangers in India and the USA. A modern 18+ Omegle and OmeTV alternative.",
+          inLanguage: ["en", "hi"],
+          areaServed: [
+            { "@type": "Country", name: "India" },
+            { "@type": "Country", name: "United States" },
+          ],
           offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
         }),
       },
@@ -176,6 +181,24 @@ function Landing() {
       </main>
 
       <footer className="border-t border-border">
+        <section className="mx-auto grid w-full max-w-6xl gap-6 px-4 pt-10 text-sm text-muted-foreground md:grid-cols-2">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Random video chat in India</h2>
+            <p className="mt-2">
+              CHAT STATION is a free stranger video chat built for India. Talk in Hindi, Hinglish or English
+              with people from Delhi, Mumbai, Bihar, Punjab and every state. It runs in the browser on Jio, Airtel
+              and Vi 4G/5G, so there is no app download and no coins needed to start.
+            </p>
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Talk to strangers in the USA</h2>
+            <p className="mt-2">
+              Meet people from the United States, UK and around the world on one-to-one video or audio calls.
+              Practice English, make new friends and skip anytime. CHAT STATION is an 18+ Omegle alternative with
+              Google sign-in, report and block tools to keep the community safe.
+            </p>
+          </div>
+        </section>
         <nav className="mx-auto flex w-full max-w-6xl flex-wrap gap-2 px-4 pt-8 text-xs">
           {SEO_TOPICS.map((s) => (
             <Link key={s.slug} to="/topics/$slug" params={{ slug: s.slug }} className="capitalize text-muted-foreground hover:text-foreground">
