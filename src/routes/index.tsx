@@ -225,9 +225,9 @@ function Landing() {
         <Link to="/chat" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
           <Video className="size-5" /> Video
         </Link>
-        <button type="button" onClick={() => document.getElementById("rooms")?.scrollIntoView({ behavior: "smooth" })} className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
+        <Link to="/live" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
           <Radio className="size-5 text-destructive" /> Live
-        </button>
+        </Link>
         <Link to="/profile" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
           <UserRound className="size-5" /> Profile
         </Link>
