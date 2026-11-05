@@ -173,3 +173,34 @@
 @utility hero-rise { animation: hero-rise 0.7s ease-out both; }
 @utility cta-breathe { animation: cta-breathe 2.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .hero-blob, .hero-rise, .cta-breathe { animation: none; } }
+
+/* Neon 3D glass (CSS-only, lightweight) */
+.studio-bg {
+  background:
+    radial-gradient(60% 40% at 0% 0%, color-mix(in oklab, var(--primary) 18%, transparent), transparent),
+    radial-gradient(50% 40% at 100% 10%, color-mix(in oklab, var(--accent) 16%, transparent), transparent),
+    var(--background);
+}
+.glass-3d {
+  background: color-mix(in oklab, var(--card) 70%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 30%, var(--border));
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--foreground) 10%, transparent) inset,
+    0 18px 40px -18px color-mix(in oklab, var(--primary) 45%, transparent);
+  backdrop-filter: blur(14px);
+}
+.btn-3d {
+  background: color-mix(in oklab, var(--background) 65%, transparent);
+  border: 1px solid color-mix(in oklab, var(--foreground) 18%, transparent);
+  box-shadow: 0 4px 0 color-mix(in oklab, var(--background) 80%, transparent), 0 8px 18px -6px color-mix(in oklab, var(--primary) 50%, transparent);
+  backdrop-filter: blur(10px);
+  transition: transform .12s;
+}
+.btn-3d:active { transform: translateY(3px); }
+.btn-live-3d {
+  background: linear-gradient(135deg, var(--destructive), var(--accent));
+  color: var(--destructive-foreground);
+  box-shadow: 0 5px 0 color-mix(in oklab, var(--destructive) 55%, black), 0 14px 30px -10px var(--destructive);
+  transition: transform .12s, box-shadow .12s;
+}
+.btn-live-3d:active { transform: translateY(4px); box-shadow: 0 1px 0 color-mix(in oklab, var(--destructive) 55%, black); }
+.tilt-3d { transform: perspective(600px) rotateY(-10deg) rotateX(4deg); box-shadow: 0 12px 24px -10px color-mix(in oklab, var(--primary) 60%, transparent); }

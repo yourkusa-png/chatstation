@@ -2,7 +2,6 @@ import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Home, Radio, Search, UserRound, Users, Video } from "lucide-react";
 
-import { CreateRoomDialog } from "@/components/CreateRoomDialog";
 import { RoomThumb } from "@/components/RoomThumb";
 import { useRooms } from "@/hooks/useRooms";
 
@@ -24,19 +23,18 @@ function LivePage() {
   const navigate = useNavigate();
   const { rooms } = useRooms();
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
   const list = (rooms ?? [])
     .filter((r) => r.title.toLowerCase().includes(q.trim().toLowerCase()) || r.id.startsWith(q.trim()))
     .sort((a, b) => b.member_count - a.member_count);
 
   return (
-    <div className="min-h-screen bg-background px-4 pb-10 pt-4 text-foreground">
+    <div className="studio-bg min-h-screen px-4 pb-10 pt-4 text-foreground">
       <div className="flex items-center gap-3">
         <Link to="/" aria-label="Back"><ArrowLeft className="size-5" /></Link>
         <h1 className="flex items-center gap-2 text-xl font-bold"><Radio className="size-5 text-destructive" /> Live</h1>
-        <button onClick={() => setOpen(true)} className="ml-auto rounded-full bg-destructive px-4 py-2 text-sm font-bold text-destructive-foreground">
+        <Link to="/live/create" className="btn-live-3d ml-auto rounded-full px-4 py-2 text-sm font-bold">
           Go Live
-        </button>
+        </Link>
       </div>
 
       <label className="mt-4 flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5">
@@ -52,7 +50,7 @@ function LivePage() {
       ) : (
         <div className="mt-3 grid grid-cols-2 gap-3">
           {list.map((r) => (
-            <button key={r.id} onClick={() => navigate({ to: "/room/$id", params: { id: r.id } })} className="overflow-hidden rounded-2xl border border-border bg-card text-left">
+            <button key={r.id} onClick={() => navigate({ to: "/room/$id", params: { id: r.id } })} className="glass-3d overflow-hidden rounded-2xl text-left transition-transform active:scale-95">
               <div className="relative">
                 <RoomThumb thumbnail={r.thumbnail} className="h-32 w-full" />
                 <span className="absolute left-2 top-2 rounded bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">LIVE</span>
@@ -68,7 +66,6 @@ function LivePage() {
         Subscription / Paid private live — Coming soon. Abhi sab free hai.
       </div>
 
-      {open && <CreateRoomDialog open={open} onOpenChange={setOpen} />}
 
       <div className="h-16" />
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border bg-background/90 backdrop-blur">

@@ -25,6 +25,7 @@ import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as TopicsSlugRouteImport } from './routes/topics.$slug'
+import { Route as AuthenticatedLiveCreateRouteImport } from './routes/_authenticated/live_.create'
 import { Route as AuthenticatedRoomIdRouteImport } from './routes/_authenticated/room.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -106,6 +107,11 @@ const TopicsSlugRoute = TopicsSlugRouteImport.update({
   path: '/topics/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedLiveCreateRoute = AuthenticatedLiveCreateRouteImport.update({
+  id: '/live_/create',
+  path: '/live/create',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRoomIdRoute = AuthenticatedRoomIdRouteImport.update({
   id: '/room/$id',
   path: '/room/$id',
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/live': typeof AuthenticatedLiveRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/topics/$slug': typeof TopicsSlugRoute
+  '/live/create': typeof AuthenticatedLiveCreateRoute
   '/room/$id': typeof AuthenticatedRoomIdRoute
 }
 export interface FileRoutesByTo {
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/live': typeof AuthenticatedLiveRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/topics/$slug': typeof TopicsSlugRoute
+  '/live/create': typeof AuthenticatedLiveCreateRoute
   '/room/$id': typeof AuthenticatedRoomIdRoute
 }
 export interface FileRoutesById {
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/topics/$slug': typeof TopicsSlugRoute
+  '/_authenticated/live_/create': typeof AuthenticatedLiveCreateRoute
   '/_authenticated/room/$id': typeof AuthenticatedRoomIdRoute
 }
 export interface FileRouteTypes {
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/live'
     | '/profile'
     | '/topics/$slug'
+    | '/live/create'
     | '/room/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/live'
     | '/profile'
     | '/topics/$slug'
+    | '/live/create'
     | '/room/$id'
   id:
     | '__root__'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/_authenticated/live'
     | '/_authenticated/profile'
     | '/topics/$slug'
+    | '/_authenticated/live_/create'
     | '/_authenticated/room/$id'
   fileRoutesById: FileRoutesById
 }
@@ -354,6 +366,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TopicsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/live_/create': {
+      id: '/_authenticated/live_/create'
+      path: '/live/create'
+      fullPath: '/live/create'
+      preLoaderRoute: typeof AuthenticatedLiveCreateRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/room/$id': {
       id: '/_authenticated/room/$id'
       path: '/room/$id'
@@ -370,6 +389,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedLiveCreateRoute: typeof AuthenticatedLiveCreateRoute
   AuthenticatedRoomIdRoute: typeof AuthenticatedRoomIdRoute
 }
 
@@ -379,6 +399,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedLiveRoute: AuthenticatedLiveRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedLiveCreateRoute: AuthenticatedLiveCreateRoute,
   AuthenticatedRoomIdRoute: AuthenticatedRoomIdRoute,
 }
 
