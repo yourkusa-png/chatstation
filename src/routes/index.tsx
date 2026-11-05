@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   Radio, Shield, SkipForward, MessageSquare, Globe, Sparkles, Loader2,
-  Video, Mic, Headphones, SlidersHorizontal, Zap, Users, Music, Gamepad2, Coffee,
+  Video, Mic, Headphones, Radio, SlidersHorizontal, Zap, Users, Music, Gamepad2, Coffee,
   Home, UserRound,
 } from "lucide-react";
 
@@ -226,7 +226,7 @@ function Landing() {
           <Video className="size-5" /> Video
         </Link>
         <button type="button" onClick={() => document.getElementById("rooms")?.scrollIntoView({ behavior: "smooth" })} className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
-          <Headphones className="size-5" /> Rooms
+          <Radio className="size-5 text-destructive" /> Live
         </button>
         <Link to="/profile" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground">
           <UserRound className="size-5" /> Profile

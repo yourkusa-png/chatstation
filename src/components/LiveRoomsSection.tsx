@@ -29,7 +29,7 @@ export function LiveRoomsSection({ signedIn, busy, onGoogle }: Props) {
   return (
     <section id="rooms">
       <div className="mt-7 flex items-center justify-between">
-        <h2 className="text-lg font-bold">Live Rooms</h2>
+        <h2 className="text-lg font-bold">🔴 Live</h2>
         <Button
           size="sm"
           className="rounded-full"
@@ -60,7 +60,7 @@ export function LiveRoomsSection({ signedIn, busy, onGoogle }: Props) {
             return (
               <div key={r.id} className="overflow-hidden rounded-3xl border border-border bg-card shadow-lg shadow-primary/10">
                 <button type="button" onClick={() => joinRoom(r.id)} disabled={full} className="relative block w-full">
-                  <RoomThumb thumbnail={r.thumbnail} className="aspect-video w-full" />
+                  <RoomThumb thumbnail={r.thumbnail} className="h-32 w-full" />
                   <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-destructive px-2 py-0.5 text-[11px] font-bold text-destructive-foreground">
                     <span className="size-1.5 animate-pulse rounded-full bg-destructive-foreground" /> LIVE
                   </span>
