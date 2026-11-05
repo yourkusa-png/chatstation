@@ -53,7 +53,7 @@ export function LiveRoomsSection({ signedIn, busy, onGoogle }: Props) {
           <p className="text-xs text-muted-foreground">Be the first host — create a room and go live.</p>
         </div>
       ) : (
-        <div className="mt-3 grid gap-3">
+        <div className="mt-3 grid grid-cols-2 gap-3">
           {rooms.map((r) => {
             const full = r.member_count >= r.max_members;
             const category = ROOM_CATEGORIES.find((c) => c.value === r.category);
@@ -68,8 +68,8 @@ export function LiveRoomsSection({ signedIn, busy, onGoogle }: Props) {
                     <Users className="size-3" /> {r.member_count}/{r.max_members}
                   </span>
                 </button>
-              <div className="flex items-center gap-3 p-3">
-                <div className="min-w-0 flex-1">
+              <div className="flex flex-col gap-2 p-2.5">
+                <div className="min-w-0">
                   <p className="truncate font-semibold">{r.title}</p>
                   <p className="truncate text-xs text-muted-foreground">
                     {category ? `${category.emoji} ${category.label}` : r.category} · {r.member_count}/{r.max_members} inside
