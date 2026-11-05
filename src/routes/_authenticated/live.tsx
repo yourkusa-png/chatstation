@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Radio, Search, Users } from "lucide-react";
+import { ArrowLeft, Home, Radio, Search, UserRound, Users, Video } from "lucide-react";
 
 import { CreateRoomDialog } from "@/components/CreateRoomDialog";
 import { RoomThumb } from "@/components/RoomThumb";
@@ -69,6 +69,14 @@ function LivePage() {
       </div>
 
       {open && <CreateRoomDialog open={open} onOpenChange={setOpen} />}
+
+      <div className="h-16" />
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border bg-background/90 backdrop-blur">
+        <Link to="/" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground"><Home className="size-5" /> Home</Link>
+        <Link to="/chat" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground"><Video className="size-5" /> Video</Link>
+        <Link to="/live" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-destructive"><Radio className="size-5" /> Live</Link>
+        <Link to="/profile" className="flex flex-col items-center gap-0.5 py-2.5 text-xs text-muted-foreground"><UserRound className="size-5" /> Profile</Link>
+      </nav>
     </div>
   );
 }

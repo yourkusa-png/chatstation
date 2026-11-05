@@ -347,7 +347,19 @@ function RoomPage() {
               })}
               <div ref={chatEndRef} />
             </div>
-            <div className="flex items-center gap-2 border-t border-border p-3">
+            <div className="flex gap-2 overflow-x-auto border-t border-border px-3 pt-2">
+              {["🌹", "❤️", "🔥", "🎉", "👑", "💎"].map((g) => (
+                <button
+                  key={g}
+                  aria-label={`Send gift ${g}`}
+                  onClick={() => void room.sendMessage(`🎁 Gift ${g}`)}
+                  className="shrink-0 rounded-full bg-background/80 px-3 py-1 text-lg active:scale-90"
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 p-3">
               <Input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}

@@ -208,7 +208,13 @@ function Landing() {
         </nav>
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-4 px-4 py-8 text-sm text-muted-foreground">
           <span>© {new Date().getFullYear()} CHAT STATION</span>
-          <Link to="/pricing" className="ml-auto hover:text-foreground">
+          <Link to="/about" className="ml-auto hover:text-foreground">About</Link>
+          <Link to="/safety" className="hover:text-foreground">Safety</Link>
+          <Link to="/help" className="hover:text-foreground">Help</Link>
+          <Link to="/contact" className="hover:text-foreground">Contact</Link>
+          <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
+          <Link to="/terms" className="hover:text-foreground">Terms</Link>
+          <Link to="/pricing" className="hover:text-foreground">
             Pricing
           </Link>
           <Link to="/auth" className="hover:text-foreground">
