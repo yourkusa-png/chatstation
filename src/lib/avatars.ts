@@ -25,9 +25,8 @@ export function clearAvatarCache(raw?: string | null) {
 }
 
 /** Downscale an image file on the device so uploads stay small (no server cost). */
-export async function fileToAvatarBlob(file: File): Promise<Blob> {
+export async function fileToAvatarBlob(file: File, max = 512): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
-  const max = 512;
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const w = Math.round(bitmap.width * scale);
   const h = Math.round(bitmap.height * scale);

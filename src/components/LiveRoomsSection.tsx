@@ -4,6 +4,7 @@ import { Loader2, Plus, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CreateRoomDialog } from "@/components/CreateRoomDialog";
+import { RoomThumb } from "@/components/RoomThumb";
 import { ROOM_CATEGORIES, useRooms } from "@/hooks/useRooms";
 
 type Props = {
@@ -57,11 +58,17 @@ export function LiveRoomsSection({ signedIn, busy, onGoogle }: Props) {
             const full = r.member_count >= r.max_members;
             const category = ROOM_CATEGORIES.find((c) => c.value === r.category);
             return (
-              <div key={r.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
-                <div className="relative flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/30 to-accent/30 text-2xl">
-                  {r.thumbnail}
-                  <span className="absolute -right-1 -top-1 size-2.5 animate-pulse rounded-full bg-destructive" />
-                </div>
+              <div key={r.id} className="overflow-hidden rounded-3xl border border-border bg-card shadow-lg shadow-primary/10">
+                <button type="button" onClick={() => joinRoom(r.id)} disabled={full} className="relative block w-full">
+                  <RoomThumb thumbnail={r.thumbnail} className="aspect-video w-full" />
+                  <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-destructive px-2 py-0.5 text-[11px] font-bold text-destructive-foreground">
+                    <span className="size-1.5 animate-pulse rounded-full bg-destructive-foreground" /> LIVE
+                  </span>
+                  <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-md bg-background/70 px-2 py-0.5 text-[11px] font-semibold backdrop-blur">
+                    <Users className="size-3" /> {r.member_count}/{r.max_members}
+                  </span>
+                </button>
+              <div className="flex items-center gap-3 p-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{r.title}</p>
                   <p className="truncate text-xs text-muted-foreground">
@@ -76,6 +83,7 @@ export function LiveRoomsSection({ signedIn, busy, onGoogle }: Props) {
                 >
                   <Users className="size-3" /> {full ? "Full" : "Join"}
                 </button>
+              </div>
               </div>
             );
           })}

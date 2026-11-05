@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { ImagePlus, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { fileToAvatarBlob } from "@/lib/avatars";
+import { RoomThumb } from "@/components/RoomThumb";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +29,27 @@ export function CreateRoomDialog({ open, onOpenChange }: Props) {
   const [category, setCategory] = useState("chill");
   const [thumbnail, setThumbnail] = useState("🎙️");
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function uploadCover(file: File) {
+    setError(null);
+    setUploading(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("Please sign in again");
+      const blob = await fileToAvatarBlob(file, 1280);
+      const path = `${u.user.id}/room-${Date.now()}.jpg`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+      if (upErr) throw upErr;
+      setThumbnail(path);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function handleCreate() {
     setError(null);
@@ -60,7 +84,22 @@ export function CreateRoomDialog({ open, onOpenChange }: Props) {
           </div>
 
           <div className="space-y-2">
-            <Label>Thumbnail</Label>
+            <Label>Cover image</Label>
+            <RoomThumb thumbnail={thumbnail} className="aspect-video w-full rounded-2xl border border-border" />
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/60 bg-primary/10 py-2.5 text-sm font-semibold text-primary">
+              {uploading ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
+              Upload from gallery
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void uploadCover(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
             <div className="flex flex-wrap gap-2">
               {ROOM_THUMBNAILS.map((e) => (
                 <button

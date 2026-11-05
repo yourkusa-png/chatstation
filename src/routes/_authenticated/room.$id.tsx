@@ -22,6 +22,7 @@ import { useRoom } from "@/hooks/useRoom";
 import { ROOM_THUMBNAILS } from "@/hooks/useRooms";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getAvatarUrl } from "@/lib/avatars";
+import { RoomThumb } from "@/components/RoomThumb";
 
 export const Route = createFileRoute("/_authenticated/room/$id")({
   head: () => ({
@@ -193,7 +194,7 @@ function RoomPage() {
           <Popover>
             <PopoverTrigger asChild>
               <button type="button" aria-label="Change thumbnail" className="flex size-9 items-center justify-center rounded-xl border border-border bg-card text-xl">
-                {room.room?.thumbnail ?? "🎙️"}
+                <RoomThumb thumbnail={room.room?.thumbnail ?? "🎙️"} className="size-9 rounded-xl [&_span]:text-xl" />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-56 rounded-2xl p-2">
@@ -208,7 +209,7 @@ function RoomPage() {
             </PopoverContent>
           </Popover>
         ) : (
-          <span className="text-xl">{room.room?.thumbnail ?? "🎙️"}</span>
+          <span className="text-xl"><RoomThumb thumbnail={room.room?.thumbnail ?? "🎙️"} className="size-9 rounded-xl [&_span]:text-xl" /></span>
         )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold">{room.room?.title ?? "Live room"}</p>
