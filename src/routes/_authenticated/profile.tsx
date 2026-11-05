@@ -83,6 +83,41 @@ function ProfilePage() {
     },
   });
 
+  const [tab, setTab] = useState<"followers" | "following">("followers");
+  const { data: people, isLoading: peopleLoading } = useQuery({
+    queryKey: ["my-follow-list", user?.id, tab],
+    enabled: !!user,
+    queryFn: async () => {
+      const col = tab === "followers" ? "followed_id" : "follower_id";
+      const other = tab === "followers" ? "follower_id" : "followed_id";
+      const { data } = await supabase
+        .from("follows")
+        .select("follower_id, followed_id, created_at")
+        .eq(col, user!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const rows = (data ?? []) as { follower_id: string; followed_id: string; created_at: string }[];
+      const ids = rows.map((r) => r[other as "follower_id"]);
+      const { data: profs } = ids.length
+        ? await supabase.from("profiles").select("id, display_name, avatar_url, last_seen_at").in("id", ids)
+        : { data: [] };
+      const map = new Map((profs ?? []).map((p) => [p.id, p]));
+      return Promise.all(
+        rows.map(async (r) => {
+          const id = r[other as "follower_id"];
+          const p = map.get(id);
+          return {
+            id,
+            name: p?.display_name ?? `User ${id.slice(0, 6)}`,
+            avatar: p ? await getAvatarUrl(p.avatar_url) : null,
+            online: !!p && new Date(p.last_seen_at).getTime() > Date.now() - 120000,
+            since: r.created_at,
+          };
+        }),
+      );
+    },
+  });
+
   async function save() {
     if (!user) return;
     setSaving(true);
@@ -161,13 +196,79 @@ function ProfilePage() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-2xl px-4 py-10">
-        <h1 className="text-3xl font-bold">Your profile</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This is what strangers see when you connect.
-        </p>
+      <main className="mx-auto w-full max-w-2xl px-4 py-6">
+        <section className="glass-3d relative overflow-hidden rounded-3xl border border-border">
+          <div className="h-28 bg-gradient-to-br from-primary/40 via-accent/20 to-background" />
+          <div className="-mt-12 flex flex-col items-center px-5 pb-5 text-center">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="size-24 rounded-full border-4 border-background object-cover shadow-lg" />
+            ) : (
+              <span className="flex size-24 items-center justify-center rounded-full border-4 border-background bg-surface text-3xl font-bold">
+                {(displayName || "S").charAt(0).toUpperCase()}
+              </span>
+            )}
+            <h1 className="mt-3 text-2xl font-bold">{profile?.display_name ?? "You"}</h1>
+            {profile?.bio && <p className="mt-1 max-w-sm text-sm text-muted-foreground">{profile.bio}</p>}
+            <div className="mt-4 grid w-full grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-background/40">
+              <button onClick={() => setTab("followers")} className="py-3">
+                <p className="text-xl font-bold">{social?.followers ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Followers</p>
+              </button>
+              <button onClick={() => setTab("following")} className="py-3">
+                <p className="text-xl font-bold">{social?.following ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Following</p>
+              </button>
+              <div className="py-3">
+                <p className="text-xl font-bold">{stats?.chats ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Chats</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <section className="mt-5 rounded-3xl border border-border bg-card p-4">
+          <div className="flex gap-2 rounded-full bg-background/50 p-1">
+            {(["followers", "following"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex-1 rounded-full py-2 text-sm font-semibold capitalize transition ${tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          <ul className="mt-3 max-h-80 space-y-1 overflow-y-auto">
+            {peopleLoading && <li className="py-6 text-center text-sm text-muted-foreground">Loading…</li>}
+            {!peopleLoading && (people ?? []).length === 0 && (
+              <li className="py-6 text-center text-sm text-muted-foreground">
+                {tab === "followers" ? "Abhi koi follower nahi hai." : "Aap abhi kisi ko follow nahi kar rahe."}
+              </li>
+            )}
+            {(people ?? []).map((p) => (
+              <li key={p.id} className="flex items-center gap-3 rounded-2xl px-2 py-2 hover:bg-background/40">
+                <div className="relative">
+                  {p.avatar ? (
+                    <img src={p.avatar} alt="" className="size-11 rounded-full object-cover" />
+                  ) : (
+                    <span className="flex size-11 items-center justify-center rounded-full bg-surface font-bold">
+                      {p.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  {p.online && <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-card bg-primary" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{p.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.online ? "Online" : "Since " + new Date(p.since).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <div className="mt-6 hidden flex-wrap gap-3">
           <div className="rounded-xl border border-border bg-card px-5 py-4">
             <p className="text-2xl font-bold">{stats?.chats ?? 0}</p>
             <p className="text-xs text-muted-foreground">Chats so far</p>

@@ -40,7 +40,23 @@ export function useRooms() {
       .eq("is_live", true)
       .order("created_at", { ascending: false })
       .limit(20);
-    const list = (roomData ?? []) as RoomRow[];
+    let list = (roomData ?? []) as RoomRow[];
+    // Hide abandoned rooms: only keep rooms whose host was seen in the last 2 minutes
+    // (profiles RLS only exposes recently-online users, so missing = offline host).
+    if (list.length > 0) {
+      const hostIds = [...new Set(list.map((r) => r.host_id))];
+      const { data: online } = await supabase
+        .from("profiles")
+        .select("id, last_seen_at")
+        .in("id", hostIds);
+      const cutoff = Date.now() - 2 * 60 * 1000;
+      const alive = new Set(
+        (online ?? [])
+          .filter((p) => new Date(p.last_seen_at).getTime() > cutoff)
+          .map((p) => p.id),
+      );
+      list = list.filter((r) => alive.has(r.host_id) || r.host_id === user?.id);
+    }
     if (list.length === 0) {
       setRooms([]);
       return;
