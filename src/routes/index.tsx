@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   Radio, Shield, SkipForward, MessageSquare, Globe, Sparkles, Loader2,
-  Video, Mic, Headphones, Radio, SlidersHorizontal, Zap, Users, Music, Gamepad2, Coffee,
+  Video, Mic, Headphones, SlidersHorizontal, Zap, Users, Music, Gamepad2, Coffee,
   Home, UserRound,
 } from "lucide-react";
 
