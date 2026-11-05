@@ -52,11 +52,13 @@ function LivePage() {
           {list.map((r) => (
             <button key={r.id} onClick={() => navigate({ to: "/room/$id", params: { id: r.id } })} className="glass-3d overflow-hidden rounded-2xl text-left transition-transform active:scale-95">
               <div className="relative">
-                <RoomThumb thumbnail={r.thumbnail} className="h-32 w-full" />
-                <span className="absolute left-2 top-2 rounded bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">LIVE</span>
-                <span className="absolute right-2 top-2 flex items-center gap-1 rounded bg-background/70 px-1.5 text-[10px]"><Users className="size-3" />{r.member_count}</span>
+                <RoomThumb thumbnail={r.thumbnail} className="aspect-[3/4] h-auto w-full" />
+                <span className="absolute left-2 top-2 flex items-center gap-1 rounded bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-destructive-foreground"><span className="size-1.5 animate-pulse rounded-full bg-destructive-foreground" />LIVE</span>
+                <span className="absolute right-2 top-2 flex items-center gap-1 rounded bg-background/70 px-1.5 py-0.5 text-[10px] backdrop-blur"><Users className="size-3" />{r.member_count}</span>
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/90 to-transparent p-2 pt-8">
+                  <p className="truncate text-sm font-bold">{r.title}</p>
+                </div>
               </div>
-              <p className="truncate p-2 text-sm font-semibold">{r.title}</p>
             </button>
           ))}
         </div>

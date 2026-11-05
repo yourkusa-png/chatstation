@@ -66,6 +66,7 @@ function Tile({
   micOn,
   avatar,
   action,
+  full,
 }: {
   stream: MediaStream | null;
   name: string;
@@ -75,6 +76,7 @@ function Tile({
   micOn: boolean;
   avatar: string | null;
   action?: React.ReactNode;
+  full?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -85,7 +87,7 @@ function Tile({
   }, [stream]);
 
   return (
-    <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-border bg-surface sm:aspect-video">
+    <div className={full ? "relative size-full bg-surface" : "relative aspect-[3/4] overflow-hidden rounded-xl border border-border bg-surface"}>
       <video
         ref={videoRef}
         autoPlay
@@ -123,9 +125,7 @@ function RoomPage() {
   const navigate = useNavigate();
   const room = useRoom(id);
   const joinedOnce = useRef(false);
-  const [chatOpen, setChatOpen] = useState(false);
   const [draft, setDraft] = useState("");
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (joinedOnce.current) return;
@@ -134,9 +134,6 @@ function RoomPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (chatOpen) chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatOpen, room.messages.length]);
 
   async function handleLeave() {
     await room.leave();
@@ -182,198 +179,105 @@ function RoomPage() {
 
   const peers = [...room.remoteStreams.keys()];
   const count = peers.length + 1;
-  const myMeta = { name: "You", avatar: null as string | null };
+
+  const hostId = room.room?.host_id;
+  const hostStream = room.isHost ? room.localStream : hostId ? room.remoteStreams.get(hostId) ?? null : null;
+  const hostMeta = hostId ? room.peerMeta[hostId] : undefined;
+  const hostName = room.isHost ? "You" : hostMeta?.name ?? "Host";
+  const hostCam = room.isHost ? room.camOn : hostMeta?.cam_on ?? true;
+  const others = peers.filter((p) => p !== hostId);
+  const recent = room.messages.slice(-6);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border/70 bg-background/85 px-3 backdrop-blur">
-        <Button variant="ghost" size="icon" aria-label="Leave room" onClick={handleLeave}>
-          <ArrowLeft className="size-5" />
-        </Button>
-        {room.isHost ? (
-          <Popover>
-            <PopoverTrigger asChild>
-              <button type="button" aria-label="Change thumbnail" className="flex size-9 items-center justify-center rounded-xl border border-border bg-card text-xl">
-                <RoomThumb thumbnail={room.room?.thumbnail ?? "🎙️"} className="size-9 rounded-xl [&_span]:text-xl" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 rounded-2xl p-2">
-              <p className="mb-2 text-center text-xs text-muted-foreground">Change thumbnail</p>
-              <div className="grid grid-cols-5 gap-1">
-                {ROOM_THUMBNAILS.map((e) => (
-                  <button key={e} type="button" onClick={() => void room.setThumbnail(e)} className={`flex size-9 items-center justify-center rounded-lg text-xl ${room.room?.thumbnail === e ? "bg-primary/20" : "hover:bg-secondary"}`}>
-                    {e}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-        ) : (
-          <span className="text-xl"><RoomThumb thumbnail={room.room?.thumbnail ?? "🎙️"} className="size-9 rounded-xl [&_span]:text-xl" /></span>
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold">{room.room?.title ?? "Live room"}</p>
-          <p className="flex items-center gap-1 text-xs text-muted-foreground">
-            <span className="size-1.5 animate-pulse rounded-full bg-destructive" /> LIVE · {count}/{room.room?.max_members ?? 6}
-          </p>
+    <div className="fixed inset-0 z-40 overflow-hidden bg-background text-foreground">
+      <div className="absolute inset-0">
+        <Tile stream={hostStream} name={hostName} isSelf={room.isHost} isHost camOn={hostCam} micOn={room.isHost ? room.micOn : hostMeta?.mic_on ?? true} avatar={room.isHost ? null : hostMeta?.avatar_url ?? null} full />
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-background/80 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-background/90 to-transparent" />
+
+      <header className="absolute inset-x-0 top-0 flex items-center gap-2 px-3 pt-3">
+        <button type="button" aria-label="Leave room" onClick={handleLeave} className="flex size-9 items-center justify-center rounded-full bg-background/50 backdrop-blur"><ArrowLeft className="size-5" /></button>
+        <div className="flex min-w-0 items-center gap-2 rounded-full bg-background/50 py-1 pl-1 pr-3 backdrop-blur">
+          {room.isHost ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" aria-label="Change thumbnail"><RoomThumb thumbnail={room.room?.thumbnail ?? "🎙️"} className="size-8 rounded-full [&_span]:text-lg" /></button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 rounded-2xl p-2">
+                <div className="grid grid-cols-5 gap-1">
+                  {ROOM_THUMBNAILS.map((e) => (
+                    <button key={e} type="button" onClick={() => void room.setThumbnail(e)} className="flex size-9 items-center justify-center rounded-lg text-xl hover:bg-secondary">{e}</button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <RoomThumb thumbnail={room.room?.thumbnail ?? "🎙️"} className="size-8 rounded-full [&_span]:text-lg" />
+          )}
+          <div className="min-w-0">
+            <p className="max-w-[9rem] truncate text-sm font-bold">{room.room?.title ?? "Live"}</p>
+            <p className="truncate text-[10px] text-muted-foreground">@{hostName}</p>
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setChatOpen((v) => !v)}>
-          <MessageSquare className="size-4" /> Chat
-        </Button>
+        <span className="ml-auto rounded bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground">LIVE</span>
+        <span className="flex items-center gap-1 rounded-full bg-background/50 px-2 py-0.5 text-xs backdrop-blur"><Users className="size-3.5" />{count}</span>
       </header>
 
-      <main className="flex-1 p-2">
-        <div className={`grid gap-2 ${count > 1 ? "grid-cols-2" : "grid-cols-1 max-w-md mx-auto"}`}>
-          <Tile
-            stream={room.localStream}
-            name={myMeta.name}
-            isSelf
-            isHost={room.isHost}
-            camOn={room.camOn}
-            micOn={room.micOn}
-            avatar={null}
-          />
-          {peers.map((peerId) => {
+      {(others.length > 0 || !room.isHost) && (
+        <div className="absolute right-3 top-16 flex w-24 flex-col gap-2">
+          {!room.isHost && (
+            <Tile stream={room.localStream} name="You" isSelf isHost={false} camOn={room.camOn} micOn={room.micOn} avatar={null} />
+          )}
+          {others.map((peerId) => {
             const meta = room.peerMeta[peerId];
             return (
-              <Tile
-                key={peerId}
-                stream={room.remoteStreams.get(peerId) ?? null}
-                name={meta?.name ?? "Stranger"}
-                isSelf={false}
-                isHost={room.room?.host_id === peerId}
-                camOn={meta?.cam_on ?? true}
-                micOn={meta?.mic_on ?? true}
-                avatar={meta?.avatar_url ?? null}
-                action={
-                  room.isHost ? (
-                    <button
-                      type="button"
-                      aria-label={meta?.mic_on ? "Mute their mic" : "Give them the mic"}
-                      onClick={() => room.hostSetMic(peerId, meta?.mic_on ?? true)}
-                      className={`flex size-8 items-center justify-center rounded-full border bg-background/80 backdrop-blur ${
-                        meta?.mic_on ? "border-border text-foreground" : "border-primary text-primary"
-                      }`}
-                    >
-                      {meta?.mic_on ? <Mic className="size-3.5" /> : <MicOff className="size-3.5" />}
-                    </button>
-                  ) : undefined
-                }
+              <Tile key={peerId} stream={room.remoteStreams.get(peerId) ?? null} name={meta?.name ?? "Guest"} isSelf={false} isHost={false} camOn={meta?.cam_on ?? true} micOn={meta?.mic_on ?? true} avatar={meta?.avatar_url ?? null}
+                action={room.isHost ? (
+                  <button type="button" aria-label="Toggle mic" onClick={() => room.hostSetMic(peerId, meta?.mic_on ?? true)} className="flex size-6 items-center justify-center rounded-full bg-background/80">
+                    {meta?.mic_on ? <Mic className="size-3" /> : <MicOff className="size-3 text-destructive" />}
+                  </button>
+                ) : undefined}
               />
             );
           })}
         </div>
-        {count === 1 && (
-          <p className="mt-4 flex items-center justify-center gap-2 text-center text-sm text-muted-foreground">
-            <Users className="size-4" /> Waiting for people to join — share the room with friends!
-          </p>
-        )}
-      </main>
+      )}
 
-      <div className="sticky bottom-0 border-t border-border/70 bg-background/90 px-4 py-3 backdrop-blur">
-        <div className="mx-auto flex max-w-md items-center justify-center gap-3">
-          <button
-            type="button"
-            aria-label={room.micOn ? "Mute mic" : "Unmute mic"}
-            onClick={room.toggleMic}
-            className={`flex size-12 items-center justify-center rounded-full border ${room.micOn ? "border-border bg-card" : "border-destructive/60 bg-destructive/20 text-destructive"}`}
-          >
-            {room.micOn ? <Mic className="size-5" /> : <MicOff className="size-5" />}
-          </button>
-          <button
-            type="button"
-            aria-label={room.camOn ? "Camera off" : "Camera on"}
-            onClick={room.toggleCam}
-            className={`flex size-12 items-center justify-center rounded-full border ${room.camOn ? "border-border bg-card" : "border-destructive/60 bg-destructive/20 text-destructive"}`}
-          >
-            {room.camOn ? <Video className="size-5" /> : <VideoOff className="size-5" />}
-          </button>
-          <button
-            type="button"
-            aria-label="Flip camera"
-            onClick={() => void room.switchCamera()}
-            className="flex size-12 items-center justify-center rounded-full border border-border bg-card"
-          >
-            <RefreshCw className="size-5" />
-          </button>
-          {room.isHost ? (
-            <button
-              type="button"
-              onClick={handleEnd}
-              className="flex h-12 items-center gap-2 rounded-full bg-destructive px-6 text-sm font-bold text-destructive-foreground"
-            >
-              <LogOut className="size-5" /> End room
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleLeave}
-              className="flex h-12 items-center gap-2 rounded-full bg-destructive px-6 text-sm font-bold text-destructive-foreground"
-            >
-              <LogOut className="size-5" /> Leave
-            </button>
-          )}
-        </div>
+      <div className="absolute bottom-20 left-3 right-20 flex flex-col gap-1.5">
+        {recent.length === 0 && <p className="w-fit rounded-2xl bg-background/50 px-3 py-1.5 text-xs backdrop-blur">Say hi to the live 👋</p>}
+        {recent.map((m) => (
+          <p key={m.id} className="w-fit max-w-full rounded-2xl bg-background/50 px-3 py-1.5 text-sm backdrop-blur">
+            <span className="mr-1 font-semibold text-primary">{m.sender_id === room.userId ? "You" : room.peerMeta[m.sender_id]?.name ?? "Guest"}</span>
+            {m.body}
+          </p>
+        ))}
       </div>
 
-      {chatOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-background/60 backdrop-blur-sm">
-          <button type="button" aria-label="Close chat" className="flex-1" onClick={() => setChatOpen(false)} />
-          <div className="flex h-[65vh] flex-col rounded-t-3xl border border-border bg-card">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <p className="font-bold">Room chat</p>
-              <Button variant="ghost" size="icon" aria-label="Close chat" onClick={() => setChatOpen(false)}>
-                <X className="size-5" />
-              </Button>
-            </div>
-            <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
-              {room.messages.length === 0 && (
-                <p className="text-center text-sm text-muted-foreground">Say hi to the room 👋</p>
-              )}
-              {room.messages.map((m) => {
-                const mine = m.sender_id === room.userId;
-                return (
-                  <div key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
-                    <span className="rounded-2xl bg-background/80 px-3 py-2 text-sm">
-                      {!mine && (
-                        <span className="mb-0.5 block text-[10px] font-semibold text-primary">
-                          {room.peerMeta[m.sender_id]?.name ?? "Stranger"}
-                        </span>
-                      )}
-                      {m.body}
-                    </span>
-                  </div>
-                );
-              })}
-              <div ref={chatEndRef} />
-            </div>
-            <div className="flex gap-2 overflow-x-auto border-t border-border px-3 pt-2">
+      <div className="absolute bottom-20 right-3 flex flex-col items-center gap-3">
+        <button type="button" aria-label={room.micOn ? "Mute mic" : "Unmute mic"} onClick={room.toggleMic} className="flex size-11 items-center justify-center rounded-full bg-background/50 backdrop-blur">{room.micOn ? <Mic className="size-5" /> : <MicOff className="size-5 text-destructive" />}</button>
+        <button type="button" aria-label="Camera" onClick={room.toggleCam} className="flex size-11 items-center justify-center rounded-full bg-background/50 backdrop-blur">{room.camOn ? <Video className="size-5" /> : <VideoOff className="size-5 text-destructive" />}</button>
+        <button type="button" aria-label="Flip camera" onClick={() => void room.switchCamera()} className="flex size-11 items-center justify-center rounded-full bg-background/50 backdrop-blur"><RefreshCw className="size-5" /></button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button type="button" aria-label="Gifts" className="flex size-11 items-center justify-center rounded-full bg-background/50 text-xl backdrop-blur">🎁</button>
+          </PopoverTrigger>
+          <PopoverContent side="left" className="w-auto rounded-2xl p-2">
+            <div className="flex gap-1">
               {["🌹", "❤️", "🔥", "🎉", "👑", "💎"].map((g) => (
-                <button
-                  key={g}
-                  aria-label={`Send gift ${g}`}
-                  onClick={() => void room.sendMessage(`🎁 Gift ${g}`)}
-                  className="shrink-0 rounded-full bg-background/80 px-3 py-1 text-lg active:scale-90"
-                >
-                  {g}
-                </button>
+                <button key={g} aria-label={`Send gift ${g}`} onClick={() => void room.sendMessage(`🎁 Gift ${g}`)} className="rounded-full px-2 py-1 text-xl active:scale-90">{g}</button>
               ))}
             </div>
-            <div className="flex items-center gap-2 p-3">
-              <Input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && void handleSend()}
-                placeholder="Message the room…"
-                maxLength={300}
-              />
-              <Button size="icon" aria-label="Send" onClick={() => void handleSend()}>
-                <Send className="size-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          </PopoverContent>
+        </Popover>
+        <button type="button" aria-label="Send heart" onClick={() => void room.sendMessage("❤️")} className="flex size-11 items-center justify-center rounded-full bg-background/50 text-xl backdrop-blur">❤️</button>
+        <button type="button" onClick={room.isHost ? handleEnd : handleLeave} aria-label={room.isHost ? "End live" : "Leave"} className="flex size-11 items-center justify-center rounded-full bg-destructive text-destructive-foreground"><LogOut className="size-5" /></button>
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 px-3 pb-4">
+        <Input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void handleSend()} placeholder="Say something…" maxLength={300} className="h-11 rounded-full border-border/50 bg-background/50 backdrop-blur" />
+        <Button size="icon" aria-label="Send" onClick={() => void handleSend()} className="size-11 shrink-0 rounded-full"><Send className="size-4" /></Button>
+      </div>
     </div>
   );
 }
