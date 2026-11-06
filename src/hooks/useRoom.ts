@@ -47,6 +47,7 @@ export function useRoom(roomId: string | undefined) {
   const micOnRef = useRef(true);
   const metaRef = useRef<RoomPeerMeta>({ name: "Stranger", avatar_url: null, cam_on: true, mic_on: true });
   const leftRef = useRef(false);
+  const hostIdRef = useRef<string | null>(null);
 
   metaRef.current = {
     name: profile?.display_name ?? "Stranger",
@@ -88,6 +89,11 @@ export function useRoom(roomId: string | undefined) {
       const pc = new RTCPeerConnection(ICE_SERVERS);
       pcsRef.current.set(peerId, pc);
 
+      if (localStreamRef.current.getTracks().length === 0) {
+        // Viewer: watch only, never send camera/mic.
+        pc.addTransceiver("video", { direction: "recvonly" });
+        pc.addTransceiver("audio", { direction: "recvonly" });
+      }
       for (const track of localStreamRef.current.getTracks()) {
         const sender = pc.addTrack(track, localStreamRef.current);
         const params = sender.getParameters();
@@ -134,6 +140,8 @@ export function useRoom(roomId: string | undefined) {
     async (from: string, payload: { type: string; sdp?: string; candidate?: RTCIceCandidateInit; muted?: boolean }) => {
       if (!userId) return;
       let pc = pcsRef.current.get(from);
+      const amHost = hostIdRef.current === userId;
+      if (!amHost && from !== hostIdRef.current) return;
       if (!pc && payload.type === "offer") {
         createPeer(from, false);
         pc = pcsRef.current.get(from);
@@ -208,16 +216,24 @@ export function useRoom(roomId: string | undefined) {
         return;
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
-        audio: { echoCancellation: true, noiseSuppression: true },
-      });
+      hostIdRef.current = found.host_id;
+      const isHostNow = found.host_id === userId;
+      const stream = isHostNow
+        ? await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+            audio: { echoCancellation: true, noiseSuppression: true },
+          })
+        : new MediaStream();
+      if (!isHostNow) {
+        camOnRef.current = false;
+        micOnRef.current = false;
+      }
       localStreamRef.current = stream;
       setLocalStream(stream);
-      setCamOn(true);
-      setMicOn(true);
-      camOnRef.current = true;
-      micOnRef.current = true;
+      setCamOn(isHostNow);
+      setMicOn(isHostNow);
+      camOnRef.current = isHostNow;
+      micOnRef.current = isHostNow;
 
       await supabase
         .from("room_members")
@@ -236,11 +252,14 @@ export function useRoom(roomId: string | undefined) {
     if (!channel || !userId) return;
     const state = channel.presenceState() as Record<string, { user_id: string }[]>;
     const others = Object.keys(state).filter((id) => id !== userId && id !== "undefined");
-    for (const id of others) {
+    const amHost = hostIdRef.current === userId;
+    // Broadcast model: host connects to every viewer; viewers connect only to the host.
+    const targets = amHost ? others : others.filter((id) => id === hostIdRef.current);
+    for (const id of targets) {
       if (!pcsRef.current.has(id)) createPeer(id, userId > id);
     }
     for (const id of [...pcsRef.current.keys()]) {
-      if (!others.includes(id)) destroyPeer(id);
+      if (!targets.includes(id)) destroyPeer(id);
     }
     setPeerMeta((prev) => {
       const next: Record<string, RoomPeerMeta> = {};

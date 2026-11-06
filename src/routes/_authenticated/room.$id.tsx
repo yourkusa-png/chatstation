@@ -126,6 +126,14 @@ function RoomPage() {
   const room = useRoom(id);
   const joinedOnce = useRef(false);
   const [draft, setDraft] = useState("");
+  const chatRef = useRef<HTMLDivElement>(null);
+  const msgCount = room.messages.length;
+  useEffect(() => {
+    const el = chatRef.current;
+    if (!el) return;
+    // Stick to newest message unless the viewer scrolled up to read older ones.
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) el.scrollTop = el.scrollHeight;
+  }, [msgCount]);
 
   useEffect(() => {
     if (joinedOnce.current) return;
@@ -177,16 +185,13 @@ function RoomPage() {
     );
   }
 
-  const peers = [...room.remoteStreams.keys()];
-  const count = peers.length + 1;
+  const count = Object.keys(room.peerMeta).length + 1;
 
   const hostId = room.room?.host_id;
   const hostStream = room.isHost ? room.localStream : hostId ? room.remoteStreams.get(hostId) ?? null : null;
   const hostMeta = hostId ? room.peerMeta[hostId] : undefined;
   const hostName = room.isHost ? "You" : hostMeta?.name ?? "Host";
   const hostCam = room.isHost ? room.camOn : hostMeta?.cam_on ?? true;
-  const others = peers.filter((p) => p !== hostId);
-  const recent = room.messages.slice(-6);
 
   return (
     <div className="fixed inset-0 z-40 overflow-hidden bg-background text-foreground">
@@ -224,40 +229,25 @@ function RoomPage() {
         <span className="flex items-center gap-1 rounded-full bg-background/50 px-2 py-0.5 text-xs backdrop-blur"><Users className="size-3.5" />{count}</span>
       </header>
 
-      {(others.length > 0 || !room.isHost) && (
-        <div className="absolute right-3 top-16 flex w-24 flex-col gap-2">
-          {!room.isHost && (
-            <Tile stream={room.localStream} name="You" isSelf isHost={false} camOn={room.camOn} micOn={room.micOn} avatar={null} />
-          )}
-          {others.map((peerId) => {
-            const meta = room.peerMeta[peerId];
-            return (
-              <Tile key={peerId} stream={room.remoteStreams.get(peerId) ?? null} name={meta?.name ?? "Guest"} isSelf={false} isHost={false} camOn={meta?.cam_on ?? true} micOn={meta?.mic_on ?? true} avatar={meta?.avatar_url ?? null}
-                action={room.isHost ? (
-                  <button type="button" aria-label="Toggle mic" onClick={() => room.hostSetMic(peerId, meta?.mic_on ?? true)} className="flex size-6 items-center justify-center rounded-full bg-background/80">
-                    {meta?.mic_on ? <Mic className="size-3" /> : <MicOff className="size-3 text-destructive" />}
-                  </button>
-                ) : undefined}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      <div className="absolute bottom-20 left-3 right-20 flex flex-col gap-1.5">
-        {recent.length === 0 && <p className="w-fit rounded-2xl bg-background/50 px-3 py-1.5 text-xs backdrop-blur">Say hi to the live 👋</p>}
-        {recent.map((m) => (
-          <p key={m.id} className="w-fit max-w-full rounded-2xl bg-background/50 px-3 py-1.5 text-sm backdrop-blur">
-            <span className="mr-1 font-semibold text-primary">{m.sender_id === room.userId ? "You" : room.peerMeta[m.sender_id]?.name ?? "Guest"}</span>
+      <div
+        ref={chatRef}
+        className="live-chat-scroll absolute bottom-20 left-3 right-20 flex max-h-[38vh] flex-col gap-1.5 overflow-y-auto overscroll-contain pt-10"
+      >
+        {room.messages.length === 0 && <p className="w-fit rounded-2xl bg-background/40 px-3 py-1.5 text-xs backdrop-blur">Say hi to the live 👋</p>}
+        {room.messages.map((m) => (
+          <p key={m.id} className="live-chat-bubble w-fit max-w-full rounded-2xl bg-background/40 px-3 py-1.5 text-sm backdrop-blur">
+            <span className="mr-1 font-semibold text-primary">{m.sender_id === room.userId ? "You" : m.sender_id === hostId ? hostName : room.peerMeta[m.sender_id]?.name ?? "Viewer"}</span>
             {m.body}
           </p>
         ))}
       </div>
 
       <div className="absolute bottom-20 right-3 flex flex-col items-center gap-3">
+        {room.isHost && (<>
         <button type="button" aria-label={room.micOn ? "Mute mic" : "Unmute mic"} onClick={room.toggleMic} className="flex size-11 items-center justify-center rounded-full bg-background/50 backdrop-blur">{room.micOn ? <Mic className="size-5" /> : <MicOff className="size-5 text-destructive" />}</button>
         <button type="button" aria-label="Camera" onClick={room.toggleCam} className="flex size-11 items-center justify-center rounded-full bg-background/50 backdrop-blur">{room.camOn ? <Video className="size-5" /> : <VideoOff className="size-5 text-destructive" />}</button>
         <button type="button" aria-label="Flip camera" onClick={() => void room.switchCamera()} className="flex size-11 items-center justify-center rounded-full bg-background/50 backdrop-blur"><RefreshCw className="size-5" /></button>
+        </>)}
         <Popover>
           <PopoverTrigger asChild>
             <button type="button" aria-label="Gifts" className="flex size-11 items-center justify-center rounded-full bg-background/50 text-xl backdrop-blur">🎁</button>

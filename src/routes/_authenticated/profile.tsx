@@ -197,36 +197,45 @@ function ProfilePage() {
     <div className="min-h-screen">
       <SiteHeader />
       <main className="mx-auto w-full max-w-2xl px-4 py-6">
-        <section className="glass-3d relative overflow-hidden rounded-3xl border border-border">
-          <div className="h-28 bg-gradient-to-br from-primary/40 via-accent/20 to-background" />
-          <div className="-mt-12 flex flex-col items-center px-5 pb-5 text-center">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="size-24 rounded-full border-4 border-background object-cover shadow-lg" />
-            ) : (
-              <span className="flex size-24 items-center justify-center rounded-full border-4 border-background bg-surface text-3xl font-bold">
-                {(displayName || "S").charAt(0).toUpperCase()}
+        <section className="profile-card rounded-3xl border border-border p-4">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              aria-label="Change profile photo"
+              onClick={() => fileInputRef.current?.click()}
+              className="relative shrink-0"
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="profile-ring size-20 rounded-full object-cover" />
+              ) : (
+                <span className="profile-ring flex size-20 items-center justify-center rounded-full bg-surface text-2xl font-bold">
+                  {(displayName || "S").charAt(0).toUpperCase()}
+                </span>
+              )}
+              <span className="absolute -bottom-0.5 -right-0.5 flex size-7 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground">
+                {uploading ? <Loader2 className="size-3.5 animate-spin" /> : <Camera className="size-3.5" />}
               </span>
-            )}
-            <h1 className="mt-3 text-2xl font-bold">{profile?.display_name ?? "You"}</h1>
-            {profile?.bio && <p className="mt-1 max-w-sm text-sm text-muted-foreground">{profile.bio}</p>}
-            <div className="mt-4 grid w-full grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-background/40">
-              <button onClick={() => setTab("followers")} className="py-3">
-                <p className="text-xl font-bold">{social?.followers ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Followers</p>
+            </button>
+            <div className="grid flex-1 grid-cols-3 text-center">
+              <button type="button" onClick={() => setTab("followers")}>
+                <p className="text-lg font-bold leading-tight">{social?.followers ?? 0}</p>
+                <p className={`text-[11px] ${tab === "followers" ? "text-primary" : "text-muted-foreground"}`}>Followers</p>
               </button>
-              <button onClick={() => setTab("following")} className="py-3">
-                <p className="text-xl font-bold">{social?.following ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Following</p>
+              <button type="button" onClick={() => setTab("following")}>
+                <p className="text-lg font-bold leading-tight">{social?.following ?? 0}</p>
+                <p className={`text-[11px] ${tab === "following" ? "text-primary" : "text-muted-foreground"}`}>Following</p>
               </button>
-              <div className="py-3">
-                <p className="text-xl font-bold">{stats?.chats ?? 0}</p>
-                <p className="text-xs text-muted-foreground">Chats</p>
+              <div>
+                <p className="text-lg font-bold leading-tight">{stats?.chats ?? 0}</p>
+                <p className="text-[11px] text-muted-foreground">Chats</p>
               </div>
             </div>
           </div>
+          <h1 className="mt-3 text-base font-bold">{profile?.display_name ?? "You"}</h1>
+          {profile?.bio && <p className="mt-0.5 text-sm text-muted-foreground">{profile.bio}</p>}
         </section>
 
-        <section className="mt-5 rounded-3xl border border-border bg-card p-4">
+        <section className="mt-3 rounded-3xl border border-border bg-card p-3">
           <div className="flex gap-2 rounded-full bg-background/50 p-1">
             {(["followers", "following"] as const).map((t) => (
               <button
