@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, Loader2, Trash2 } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -84,6 +85,7 @@ function ProfilePage() {
   });
 
   const [tab, setTab] = useState<"followers" | "following">("followers");
+  const [listOpen, setListOpen] = useState(false);
   const { data: people, isLoading: peopleLoading } = useQuery({
     queryKey: ["my-follow-list", user?.id, tab],
     enabled: !!user,
@@ -178,21 +180,6 @@ function ProfilePage() {
     }
   }
 
-  async function removeAvatar() {
-    if (!user) return;
-    setUploading(true);
-    try {
-      await supabase.storage.from("avatars").remove([`${user.id}/avatar.jpg`]);
-      await supabase.from("profiles").update({ avatar_url: null }).eq("id", user.id);
-      clearAvatarCache();
-      setAvatarUrl(null);
-      await refreshProfile();
-      toast.success("Profile photo removed");
-    } finally {
-      setUploading(false);
-    }
-  }
-
   return (
     <div className="min-h-screen">
       <SiteHeader />
@@ -217,11 +204,11 @@ function ProfilePage() {
               </span>
             </button>
             <div className="grid flex-1 grid-cols-3 text-center">
-              <button type="button" onClick={() => setTab("followers")}>
+              <button type="button" onClick={() => { setTab("followers"); setListOpen(true); }}>
                 <p className="text-lg font-bold leading-tight">{social?.followers ?? 0}</p>
                 <p className={`text-[11px] ${tab === "followers" ? "text-primary" : "text-muted-foreground"}`}>Followers</p>
               </button>
-              <button type="button" onClick={() => setTab("following")}>
+              <button type="button" onClick={() => { setTab("following"); setListOpen(true); }}>
                 <p className="text-lg font-bold leading-tight">{social?.following ?? 0}</p>
                 <p className={`text-[11px] ${tab === "following" ? "text-primary" : "text-muted-foreground"}`}>Following</p>
               </button>
@@ -235,7 +222,9 @@ function ProfilePage() {
           {profile?.bio && <p className="mt-0.5 text-sm text-muted-foreground">{profile.bio}</p>}
         </section>
 
-        <section className="mt-3 rounded-3xl border border-border bg-card p-3">
+        <Dialog open={listOpen} onOpenChange={setListOpen}>
+          <DialogContent className="max-w-sm rounded-3xl p-4">
+            <DialogTitle className="sr-only">Followers and following</DialogTitle>
           <div className="flex gap-2 rounded-full bg-background/50 p-1">
             {(["followers", "following"] as const).map((t) => (
               <button
@@ -275,60 +264,10 @@ function ProfilePage() {
               </li>
             ))}
           </ul>
-        </section>
+          </DialogContent>
+        </Dialog>
 
-        <div className="mt-6 hidden flex-wrap gap-3">
-          <div className="rounded-xl border border-border bg-card px-5 py-4">
-            <p className="text-2xl font-bold">{stats?.chats ?? 0}</p>
-            <p className="text-xs text-muted-foreground">Chats so far</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card px-5 py-4">
-            <p className="text-2xl font-bold">{social?.followers ?? 0}</p>
-            <p className="text-xs text-muted-foreground">Followers</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card px-5 py-4">
-            <p className="text-2xl font-bold">{social?.following ?? 0}</p>
-            <p className="text-xs text-muted-foreground">Following</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card px-5 py-4">
-            <p className="text-2xl font-bold">
-              {profile?.is_premium ? "Premium" : "Free"}
-            </p>
-            <p className="text-xs text-muted-foreground">Current plan</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card px-5 py-4">
-            <p className="text-2xl font-bold">{profile?.age_confirmed ? "Yes" : "No"}</p>
-            <p className="text-xs text-muted-foreground">Age confirmed</p>
-          </div>
-        </div>
-
-        <div className="mt-8 space-y-5 rounded-2xl border border-border bg-card p-6">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="size-20 rounded-full border-2 border-primary/50 object-cover" />
-              ) : (
-                <span className="flex size-20 items-center justify-center rounded-full border-2 border-dashed border-border bg-surface text-2xl font-bold text-muted-foreground">
-                  {(displayName || "S").charAt(0).toUpperCase()}
-                </span>
-              )}
-              {uploading && (
-                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70">
-                  <Loader2 className="size-5 animate-spin text-primary" />
-                </span>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                <Camera className="size-4" /> Upload photo
-              </Button>
-              {avatarUrl && (
-                <Button variant="ghost" size="sm" onClick={() => void removeAvatar()} disabled={uploading}>
-                  <Trash2 className="size-4" /> Remove
-                </Button>
-              )}
-              <p className="text-xs text-muted-foreground">JPG or PNG · auto-resized</p>
-            </div>
+        <div className="mt-4 space-y-5 rounded-2xl border border-border bg-card p-6">
             <input
               ref={fileInputRef}
               type="file"
@@ -336,7 +275,6 @@ function ProfilePage() {
               className="hidden"
               onChange={(e) => void handleAvatarChange(e)}
             />
-          </div>
 
           <div className="space-y-2">
             <Label htmlFor="dn">Display name</Label>
